@@ -47,7 +47,10 @@ namespace FloatingDamageNumbers
             try
             {
                 DamageNumberSettingsConfig.Get()?.ApplyToSettings();
-                DamageIconCache.Initialize();
+                GameEvents.Callbacks.DispatchToMainThread(() =>
+                {
+                    DamageIconCache.Initialize();
+                });
             }
             catch { }
         }
@@ -58,7 +61,10 @@ namespace FloatingDamageNumbers
             try
             {
                 DamageNumberSettingsConfig.Get()?.ApplyToSettings();
-                DamageIconCache.Initialize();
+                GameEvents.Callbacks.DispatchToMainThread(() =>
+                {
+                    DamageIconCache.Initialize();
+                });
             }
             catch (Exception ex)
             {
@@ -82,11 +88,11 @@ namespace FloatingDamageNumbers
             try
             {
                 DamageNumberSettingsConfig.Get()?.ApplyToSettings();
-                DamageIconCache.Initialize();
 
                 GameEvents.Callbacks.DispatchToMainThread(() =>
                 {
                     FloatingDamageNumberRenderer.EnsureInstance();
+                    DamageIconCache.Initialize();
                 });
             }
             catch { }
@@ -94,3 +100,4 @@ namespace FloatingDamageNumbers
         }
     }
 }
+

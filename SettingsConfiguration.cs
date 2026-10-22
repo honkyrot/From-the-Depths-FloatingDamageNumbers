@@ -53,7 +53,7 @@ namespace FloatingDamageNumbers
 
             // Shared - Sky Elevation & Stacking
             public float DistanceElevationFactor { get; set; } = 1.25f;
-            public float DistanceElevationExponent { get; set; } = 0.55f;
+            public float DistanceElevationExponent { get; set; } = 0.65f;
             public float MaxDistanceElevation { get; set; } = 140f;
             public float StackSpacingMultiplier { get; set; } = 1.35f;
             public float StackProximityDistance { get; set; } = 15f;
@@ -671,10 +671,10 @@ namespace FloatingDamageNumbers
             ), 0, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.0f, 1.2f, 0.05f, 0.55f,
+                _focus, 0.0f, 1.5f, 0.01f, 0.65f,
                 "Elevation Curve Exponent",
                 I => I.DistanceElevationExponent,
-                "Sub-linear power curve for elevation growth with distance (default 0.55)."
+                "Sub-linear power curve for elevation growth with distance (default 0.65)."
             ), 0, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(

@@ -85,7 +85,7 @@ namespace FloatingDamageNumbers
         /// Values below 1.0 dampen elevation gain at long ranges so distant numbers stay near the target,
         /// while giving close-range targets enough height to stay clear of the superstructure.
         /// </summary>
-        public static float DistanceElevationExponent = 0.55f;
+        public static float DistanceElevationExponent = 0.65f;
 
         /// <summary>
         /// Absolute ceiling clamp for sky elevation in meters.

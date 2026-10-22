@@ -28,6 +28,11 @@ namespace FloatingDamageNumbers
 
         public static void Initialize()
         {
+            if (_cache.Count > 0)
+            {
+                return;
+            }
+
             try
             {
                 SO_HudDamage? so = LazyLoader.HudDamage?.Get();
@@ -58,4 +63,5 @@ namespace FloatingDamageNumbers
             );
         }
     }
+}
 }
