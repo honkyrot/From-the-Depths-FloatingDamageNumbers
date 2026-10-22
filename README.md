@@ -1,8 +1,8 @@
-# Floating Damage Numbers — From the Depths Mod
+# Floating Damage Numbers - From the Depths Mod
 
 Floating Damage Numbers adds optional, world-space combat feedback to [From the Depths](https://store.steampowered.com/app/268650/From_the_Depths/).
 
-Damage recieved makes numbers appear above the ships. Damage types can be shown with colors and the game's damage icons.
+Damage received makes numbers appear above the ships. Damage types can be shown with colors and the game's damage icons.
 
 ![image](readme/image1.png)
 
@@ -23,7 +23,7 @@ Or build the project from source and copy the resulting DLL to the `Mods` folder
 
 The mod aggregates multiple block hits by construct and damage type, reuses a bounded pool of world-space number objects, and limits the number of active numbers per ship. 
 
-A test of 3v3 with 3 DWG Crossbones v 3 DWG Crossbones results in a average of 0.2-0.3ms of CPU time for the mod's damage processing on Simple settings.
+A test of 3v3 with 3 DWG Crossbones v 3 DWG Crossbones results in an average of 0.2-0.3ms of CPU time for the mod's damage processing on Simple settings.
 
 Large explosions, rapid-fire weapons, lasers, and battles involving many damaged blocks still cause the game to process many damage callbacks. Detailed Mode also performs hit-position tracking and construct coordinate conversions. Extremely large battles may produce short frame-time spikes.
 
@@ -38,4 +38,4 @@ This mod has not been tested on Linux and Mac builds.
 
 ## Personal note
 
-While I like damage numbers, remember that the guts of a ship is more imporant than raw numbers.
+While I like damage numbers, remember that the guts of a ship are more important than raw numbers.
