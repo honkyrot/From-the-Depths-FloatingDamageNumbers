@@ -11,11 +11,12 @@ namespace FloatingDamageNumbers
     {
         public string name => "FloatingDamageNumbers";
 
-        public Version version => new Version(0, 0, 1);
+        public Version version => new(0, 0, 1);
 
         public void OnLoad()
         {
             GameEvents.StartEvent.RegWithEvent(OnStart);
+            GameEvents.ProfileChange.RegWithEvent(OnProfileChanged);
 
             try
             {
@@ -41,12 +42,23 @@ namespace FloatingDamageNumbers
             }
         }
 
+        private void OnProfileChanged()
+        {
+            try
+            {
+                DamageNumberSettingsConfig.Get()?.ApplyToSettings();
+                DamageIconCache.Initialize();
+            }
+            catch { }
+        }
+
         public void OnStart()
         {
             GameEvents.StartEvent.UnregWithEvent(OnStart);
             try
             {
                 DamageNumberSettingsConfig.Get()?.ApplyToSettings();
+                DamageIconCache.Initialize();
             }
             catch (Exception ex)
             {
@@ -69,6 +81,9 @@ namespace FloatingDamageNumbers
         {
             try
             {
+                DamageNumberSettingsConfig.Get()?.ApplyToSettings();
+                DamageIconCache.Initialize();
+
                 GameEvents.Callbacks.DispatchToMainThread(() =>
                 {
                     FloatingDamageNumberRenderer.EnsureInstance();

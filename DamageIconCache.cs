@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using BrilliantSkies.FromTheDepths.Game;
 using BrilliantSkies.Ftd.DamageModels;
 using BrilliantSkies.ScriptableObjects;
 using UnityEngine;
+using BrilliantSkies.Core.Logger;
 
 namespace FloatingDamageNumbers
 {
@@ -12,11 +14,10 @@ namespace FloatingDamageNumbers
     public static class DamageIconCache
     {
         private static readonly Dictionary<DamageType, Sprite> _cache = new();
-        private static bool _initialized;
 
         public static Sprite? GetIcon(DamageType damageType)
         {
-            if (!_initialized)
+            if (_cache.Count == 0)
             {
                 Initialize();
             }
@@ -25,21 +26,26 @@ namespace FloatingDamageNumbers
             return sprite;
         }
 
-        private static void Initialize()
+        public static void Initialize()
         {
-            _initialized = true;
+            try
+            {
+                SO_HudDamage? so = LazyLoader.HudDamage?.Get();
+                if (so == null) return;
 
-            SO_HudDamage? so = LazyLoader.HudDamage?.Get();
-            if (so == null) return;
-
-            CacheTexture(DamageType.Kinetic, so.AP);
-            CacheTexture(DamageType.Explosive, so.EXP);
-            CacheTexture(DamageType.Emp, so.EMP);
-            CacheTexture(DamageType.Laser, so.LASER);
-            CacheTexture(DamageType.Particle, so.PARTICLE);
-            CacheTexture(DamageType.Plasma, so.PLASMA);
-            CacheTexture(DamageType.Fire, so.FIRE);
-            CacheTexture(DamageType.Crash, so.CRASH);
+                CacheTexture(DamageType.Kinetic, so.AP);
+                CacheTexture(DamageType.Explosive, so.EXP);
+                CacheTexture(DamageType.Emp, so.EMP);
+                CacheTexture(DamageType.Laser, so.LASER);
+                CacheTexture(DamageType.Particle, so.PARTICLE);
+                CacheTexture(DamageType.Plasma, so.PLASMA);
+                CacheTexture(DamageType.Fire, so.FIRE);
+                CacheTexture(DamageType.Crash, so.CRASH);
+            }
+            catch (Exception ex)
+            {
+                AdvLogger.LogError($"[FloatingDamageNumbers] Error in DamageIconCache.Initialize: {ex}", LogOptions.None);
+            }
         }
 
         private static void CacheTexture(DamageType type, Texture2D? tex)

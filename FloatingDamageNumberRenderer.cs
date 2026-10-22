@@ -47,6 +47,13 @@ namespace FloatingDamageNumbers
 
         private void Start()
         {
+            try
+            {
+                DamageNumberSettingsConfig.Get()?.ApplyToSettings();
+                DamageIconCache.Initialize();
+            }
+            catch { }
+
             DamageQueueManager.PrewarmPool();
         }
 
@@ -66,4 +73,3 @@ namespace FloatingDamageNumbers
     }
 }
 
-// awawa

@@ -83,16 +83,19 @@ namespace FloatingDamageNumbers
             _mainText.fontMaterial.EnableKeyword("OUTLINE_ON");
             _mainText.fontMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.05f);
 
-            // add damage image if enabled
-            if (DamageNumberSettings.ShowAssociatedIcon)
-            {
-                GameObject imageObj = new("DamageTypeSprite");
-                imageObj.transform.SetParent(transform, false);
-                _damageSpriteRenderer = imageObj.AddComponent<SpriteRenderer>();
-                _damageSpriteRenderer.sortingOrder = 10000;
-                _damageSpriteRenderer.sortingLayerName = "UI";
-                imageObj.transform.localPosition = new Vector3(1f, 0f, -0.01f);
-            }
+            EnsureSpriteRenderer();
+        }
+
+        private void EnsureSpriteRenderer()
+        {
+            if (_damageSpriteRenderer != null) return;
+
+            GameObject imageObj = new("DamageTypeSprite");
+            imageObj.transform.SetParent(transform, false);
+            _damageSpriteRenderer = imageObj.AddComponent<SpriteRenderer>();
+            _damageSpriteRenderer.sortingOrder = 10000;
+            _damageSpriteRenderer.sortingLayerName = "UI";
+            imageObj.transform.localPosition = new Vector3(1f, 0f, -0.01f);
         }
 
         public void Initialize(
@@ -240,20 +243,28 @@ namespace FloatingDamageNumbers
             }
 
             // image icon for damage type
-            if (_damageSpriteRenderer != null)
+            if (DamageNumberSettings.ShowAssociatedIcon)
             {
-                Sprite? icon = DamageIconCache.GetIcon(Type);
-                _damageSpriteRenderer.sprite = icon;
-                _damageSpriteRenderer.enabled = (icon != null);
-
-                if (icon != null && _mainText != null)
+                EnsureSpriteRenderer();
+                if (_damageSpriteRenderer != null)
                 {
-                    float rightEdge = _mainText.renderedWidth * 0.5f;
-                    float spacing = 0.25f; // gap between text and icon
-                    float spriteHalfWidth = (icon.rect.width / icon.pixelsPerUnit) * _damageSpriteRenderer.transform.localScale.x * 0.5f;
+                    Sprite? icon = DamageIconCache.GetIcon(Type);
+                    _damageSpriteRenderer.sprite = icon;
+                    _damageSpriteRenderer.enabled = (icon != null);
 
-                    _damageSpriteRenderer.transform.localPosition = new Vector3(rightEdge + spacing + spriteHalfWidth, 0f, -0.01f);
+                    if (icon != null && _mainText != null)
+                    {
+                        float rightEdge = _mainText.renderedWidth * 0.5f;
+                        float spacing = 0.25f; // gap between text and icon
+                        float spriteHalfWidth = (icon.rect.width / icon.pixelsPerUnit) * _damageSpriteRenderer.transform.localScale.x * 0.5f;
+
+                        _damageSpriteRenderer.transform.localPosition = new Vector3(rightEdge + spacing + spriteHalfWidth, 0f, -0.01f);
+                    }
                 }
+            }
+            else
+            {
+                _damageSpriteRenderer?.enabled = false;
             }
         }
 

@@ -26,7 +26,6 @@ namespace FloatingDamageNumbers
 
     /// <summary>
     /// Persistent profile module for Floating Damage Numbers configuration.
-    /// Automatically saved and loaded via BrilliantSkies PlayerProfiles.
     /// </summary>
     public class DamageNumberSettingsConfig : ProfileModule<DamageNumberSettingsConfig.InternalData>
     {
