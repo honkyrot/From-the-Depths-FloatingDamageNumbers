@@ -6,9 +6,8 @@ I was inspired by Endless Space 2’s scan on fleet battles and the Total War: W
 –
 
 Damage numbers are displayed in 3D world space, above the impacted blocks.
-Performance varries depending on the number of blocks being hit, but it should be able to handle a few hundred blocks being hit at once without any issues.
+Performance varies depending on the number of blocks being hit, but it should be able to handle a few hundred blocks being hit at once without any issues.
 
-Multiplayer compatibility isn’t tested.
+Multiplayer compatibility isn’t tested, but this is mainly client sided.
 The mod may not be compatible with those that interact with damage models.
-There may be inaccuracies in the damage numbers displayed, but so far it’s mostly accurate from initial hits.
-
+There may be inaccuracies in the damage numbers displayed, though should be similar to the actual hit numbers you get.

@@ -10,7 +10,8 @@ namespace FloatingDamageNumbers
     public static class DamageNumberSettings
     {
         public static bool EnableDamageNumbers = true; // master toggle for the mod
-        public static bool ShowHealingNumbers = true; // show green healing numbers when a block is repaired or healed
+        //public static bool ShowHealingNumbers = false; // show green healing numbers when a block is repaired or healed, maybe later 
+        // either health per block, construct effective health, or blocks alive.
 
         #region Shared Settings
 

@@ -35,14 +35,6 @@ namespace FloatingDamageNumbers
                 float healthAfter = __instance.CurrentHealth;
                 float damageDealt = healthBefore - healthAfter;
 
-                if (damageDealt < 0f)
-                {
-                    if (!DamageNumberSettings.ShowHealingNumbers) return;
-                    // This is a healing event
-                    AdvLogger.LogError("someone healed, {damageDealt: " + damageDealt + ", healthBefore: " + healthBefore + ", healthAfter: " + healthAfter, BrilliantSkies.Core.Logger.LogOptions._AlertDevAndCustomerInGame);
-                    return;
-                }
-
                 if (damageDealt < DamageNumberSettings.MinDamageToDisplay || float.IsNaN(damageDealt) || float.IsInfinity(damageDealt))
                 {
                     return;

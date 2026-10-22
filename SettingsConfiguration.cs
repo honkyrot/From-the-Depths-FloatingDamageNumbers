@@ -33,7 +33,7 @@ namespace FloatingDamageNumbers
         {
             // Master Controls
             public bool EnableDamageNumbers { get; set; } = true;
-            public bool ShowHealingNumbers { get; set; } = true;
+            //public bool ShowHealingNumbers { get; set; } = false;
             public bool EnableDetailedSettings { get; set; } = false;
 
             // Shared - Formatting & Icons
@@ -102,7 +102,7 @@ namespace FloatingDamageNumbers
         public void ApplyToSettings()
         {
             DamageNumberSettings.EnableDamageNumbers = EnableDamageNumbers;
-            DamageNumberSettings.ShowHealingNumbers = ShowHealingNumbers;
+            //DamageNumberSettings.ShowHealingNumbers = ShowHealingNumbers;
             DamageNumberSettings.EnableDetailedSettings = EnableDetailedSettings;
 
             DamageNumberSettings.ShowAssociatedIcon = ShowAssociatedIcon;
@@ -149,11 +149,11 @@ namespace FloatingDamageNumbers
             set { Internal.EnableDamageNumbers = value; DamageNumberSettings.EnableDamageNumbers = value; }
         }
 
-        public bool ShowHealingNumbers
-        {
-            get => Internal.ShowHealingNumbers;
-            set { Internal.ShowHealingNumbers = value; DamageNumberSettings.ShowHealingNumbers = value; }
-        }
+        //public bool ShowHealingNumbers
+        //{
+        //    get => Internal.ShowHealingNumbers;
+        //    set { Internal.ShowHealingNumbers = value; DamageNumberSettings.ShowHealingNumbers = value; }
+        //}
 
         public bool EnableDetailedSettings
         {
@@ -486,12 +486,12 @@ namespace FloatingDamageNumbers
                 I => I.EnableDamageNumbers
             ));
 
-            table.AddInterpretter(UIHelper.Bool(
-                _focus,
-                "Show Repair Numbers",
-                "Display green floating numbers when damaged blocks are repaired.",
-                I => I.ShowHealingNumbers
-            ));
+            //table.AddInterpretter(UIHelper.Bool(
+            //    _focus,
+            //    "Show Repair Numbers",
+            //    "Display green floating numbers when damaged blocks are repaired.",
+            //    I => I.ShowHealingNumbers
+            //));
         }
 
         private void ModeSection()
