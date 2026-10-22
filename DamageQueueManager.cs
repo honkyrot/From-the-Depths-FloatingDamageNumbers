@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using BrilliantSkies.Core.Logger;
 using BrilliantSkies.Ftd.DamageModels;
@@ -22,7 +23,23 @@ namespace FloatingDamageNumbers
             public int HitCount;
         }
 
-        private static readonly object _syncLock = new object();
+        private readonly struct DamageEvent
+        {
+            public DamageEvent(MainConstruct? construct, DamageType type, float amount, Vector3 position)
+            {
+                Construct = construct;
+                Type = type;
+                Amount = amount;
+                Position = position;
+            }
+
+            public MainConstruct? Construct { get; }
+            public DamageType Type { get; }
+            public float Amount { get; }
+            public Vector3 Position { get; }
+        }
+
+        private static readonly ConcurrentQueue<DamageEvent> _incomingDamage = new ConcurrentQueue<DamageEvent>();
         private static readonly Dictionary<long, DamageBucket> _pendingBuckets = new Dictionary<long, DamageBucket>();
         private static readonly List<DamageBucket> _drainedBuckets = new List<DamageBucket>();
 
@@ -34,8 +51,8 @@ namespace FloatingDamageNumbers
         private static GameObject? _poolRoot;
 
         /// <summary>
-        /// Ingests a damage event. Thread-safe: collapses multiple hits on the same construct/type
-        /// in the current frame into a single bucket.
+        /// Ingests a damage event from any thread.
+        /// The main-thread update pass drains and aggregates these hits per construct/type.
         /// </summary>
         public static void RecordDamage(MainConstruct? construct, DamageType damageType, float damageAmount, Vector3 worldPosition)
         {
@@ -49,41 +66,11 @@ namespace FloatingDamageNumbers
                 return;
             }
 
-            int constructId = construct != null ? construct.UniqueId : -1;
-            long key = ((long)constructId << 32) | (long)(uint)damageType;
-
-            lock (_syncLock)
-            {
-                if (_pendingBuckets.TryGetValue(key, out var bucket))
-                {
-                    bucket.PreviousDamage = bucket.TotalDamage;
-                    bucket.TotalDamage += damageAmount;
-                    bucket.HitCount++;
-                    if (DamageNumberSettings.EnableDetailedSettings)
-                    {
-                        // Weighted average position for the cluster
-                        float weight = 1f / bucket.HitCount;
-                        bucket.Position = Vector3.Lerp(bucket.Position, worldPosition, weight);
-                    }
-                    // else, use the first hit position for the bucket (it really doesn't matter, simple uses COM)
-                }
-                else
-                {
-                    _pendingBuckets[key] = new DamageBucket
-                    {
-                        Construct = construct,
-                        Type = damageType,
-                        TotalDamage = damageAmount,
-                        PreviousDamage = damageAmount,
-                        Position = worldPosition,
-                        HitCount = 1
-                    };
-                }
-            }
+            _incomingDamage.Enqueue(new DamageEvent(construct, damageType, damageAmount, worldPosition));
         }
 
         /// <summary>
-        /// If a construct is being actively repaird, this uses a custom "healing" damage type to display the amount of health restored.
+        /// If a construct is being actively repaired, this uses a custom "healing" damage type to display the amount of health restored.
         /// </summary>
         public static void RecordHealing(MainConstruct? construct, float healingAmount)
         {
@@ -95,7 +82,7 @@ namespace FloatingDamageNumbers
         /// Processes coalesced buckets, updates lifetimes, and assigns vertical stack indices.
         /// Runs on Unity's main thread every frame.
         /// </summary>
-        public static void Update(float currentTime)
+        public static void Update(float currentTime, float deltaTime)
         {
             if (!DamageNumberSettings.EnableDamageNumbers)
             {
@@ -103,18 +90,17 @@ namespace FloatingDamageNumbers
                 return;
             }
 
-            // Draining the pending buckets into a local list to minimize lock contention
+            DrainIncomingDamageToBuckets();
+
+            // Drain aggregated buckets into a local list for processing this frame.
             _drainedBuckets.Clear();
-            lock (_syncLock)
+            if (_pendingBuckets.Count > 0)
             {
-                if (_pendingBuckets.Count > 0)
+                foreach (var kvp in _pendingBuckets)
                 {
-                    foreach (var kvp in _pendingBuckets)
-                    {
-                        _drainedBuckets.Add(kvp.Value);
-                    }
-                    _pendingBuckets.Clear();
+                    _drainedBuckets.Add(kvp.Value);
                 }
+                _pendingBuckets.Clear();
             }
 
             // Process each coalesced damage bucket
@@ -127,6 +113,7 @@ namespace FloatingDamageNumbers
             List<int>? emptyShipKeys = null;
             float stackProximityDistance = DamageNumberSettings.StackProximityDistance;
             float stackProximityDistanceSquared = stackProximityDistance * stackProximityDistance;
+            Camera? activeCamera = FloatingElements.ResolveActiveCamera();
 
             foreach (var kvp in _shipQueues)
             {
@@ -150,31 +137,46 @@ namespace FloatingDamageNumbers
                 {
                     emptyShipKeys ??= new List<int>();
                     emptyShipKeys.Add(shipId);
+                    continue;
                 }
-                else
-                {
-                    // Assign StackIndex: when multiple damage types (e.g. APHE: Kinetic + Explosive)
-                    // occur at the same location, stack them vertically along the camera UP axis
-                    for (int i = 0; i < queue.Count; i++)
-                    {
-                        FloatingElements current = queue[i];
-                        if (current == null || !current.gameObject.activeSelf) continue;
 
-                        int stack = 0;
-                        for (int j = 0; j < i; j++)
+                // Assign StackIndex: when multiple damage types (e.g. APHE: Kinetic + Explosive)
+                // occur at the same location, stack them vertically along the camera UP axis
+                for (int i = 0; i < queue.Count; i++)
+                {
+                    FloatingElements current = queue[i];
+                    if (current == null || !current.gameObject.activeSelf) continue;
+
+                    int stack = 0;
+                    for (int j = 0; j < i; j++)
+                    {
+                        FloatingElements prior = queue[j];
+                        if (prior != null && prior.gameObject.activeSelf)
                         {
-                            FloatingElements prior = queue[j];
-                            if (prior != null && prior.gameObject.activeSelf)
+                            Vector3 offset = current.LastWorldHitPosition - prior.LastWorldHitPosition;
+                            if (offset.sqrMagnitude <= stackProximityDistanceSquared)
                             {
-                                Vector3 offset = current.LastWorldHitPosition - prior.LastWorldHitPosition;
-                                if (offset.sqrMagnitude <= stackProximityDistanceSquared)
-                                {
-                                    stack++;
-                                }
+                                stack++;
                             }
                         }
+                    }
 
-                        current.StackIndex = stack;
+                    current.StackIndex = stack;
+                }
+
+                for (int i = queue.Count - 1; i >= 0; i--)
+                {
+                    FloatingElements item = queue[i];
+                    if (item == null || !item.gameObject.activeSelf)
+                    {
+                        queue.RemoveAt(i);
+                        continue;
+                    }
+
+                    item.ManualUpdate(currentTime, deltaTime, activeCamera);
+                    if (!item.gameObject.activeSelf)
+                    {
+                        queue.RemoveAt(i);
                     }
                 }
             }
@@ -184,6 +186,40 @@ namespace FloatingDamageNumbers
                 foreach (int key in emptyShipKeys)
                 {
                     _shipQueues.Remove(key);
+                }
+            }
+        }
+
+        private static void DrainIncomingDamageToBuckets()
+        {
+            while (_incomingDamage.TryDequeue(out DamageEvent damageEvent))
+            {
+                int constructId = damageEvent.Construct != null ? damageEvent.Construct.UniqueId : -1;
+                long key = ((long)constructId << 32) | (long)(uint)damageEvent.Type;
+
+                if (_pendingBuckets.TryGetValue(key, out DamageBucket? bucket))
+                {
+                    bucket.PreviousDamage = bucket.TotalDamage;
+                    bucket.TotalDamage += damageEvent.Amount;
+                    bucket.HitCount++;
+
+                    if (DamageNumberSettings.EnableDetailedSettings)
+                    {
+                        float weight = 1f / bucket.HitCount;
+                        bucket.Position = Vector3.Lerp(bucket.Position, damageEvent.Position, weight);
+                    }
+                }
+                else
+                {
+                    _pendingBuckets[key] = new DamageBucket
+                    {
+                        Construct = damageEvent.Construct,
+                        Type = damageEvent.Type,
+                        TotalDamage = damageEvent.Amount,
+                        PreviousDamage = damageEvent.Amount,
+                        Position = damageEvent.Position,
+                        HitCount = 1
+                    };
                 }
             }
         }
@@ -354,10 +390,11 @@ namespace FloatingDamageNumbers
 
         public static void Clear()
         {
-            lock (_syncLock)
+            while (_incomingDamage.TryDequeue(out _))
             {
-                _pendingBuckets.Clear();
             }
+
+            _pendingBuckets.Clear();
             foreach (var q in _shipQueues.Values)
             {
                 foreach (var item in q)

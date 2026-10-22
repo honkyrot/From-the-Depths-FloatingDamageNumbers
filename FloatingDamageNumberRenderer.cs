@@ -59,7 +59,7 @@ namespace FloatingDamageNumbers
 
         private void Update()
         {
-            DamageQueueManager.Update(Time.time);
+            DamageQueueManager.Update(Time.time, Time.deltaTime);
         }
 
         private void OnDestroy()

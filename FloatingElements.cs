@@ -303,10 +303,9 @@ namespace FloatingDamageNumbers
             _textMeshDirty = false;
         }
 
-        private void LateUpdate()
+        public void ManualUpdate(float currentTime, float deltaTime, Camera? cam)
         {
-            float time = Time.time;
-            float age = Mathf.Max(0f, time - CreationTime);
+            float age = Mathf.Max(0f, currentTime - CreationTime);
 
             if (age >= Lifetime)
             {
@@ -335,7 +334,6 @@ namespace FloatingDamageNumbers
             }
 
             // Camera and billboard alignment
-            Camera? cam = GetCamera();
             if (cam != null)
             {
                 transform.rotation = cam.transform.rotation;
@@ -353,7 +351,7 @@ namespace FloatingDamageNumbers
                 // Pop bounce effect for new hits, this is a quick scale-up and then back down to normal size.
                 if (_popTimer > 0f)
                 {
-                    _popTimer -= Time.deltaTime;
+                    _popTimer -= deltaTime;
                     float t = Mathf.Clamp01(_popTimer / DamageNumberSettings.PopBounceDuration);
                     renderScale *= Mathf.Lerp(1.0f, DamageNumberSettings.PopBounceScale, t);
                 }
@@ -371,7 +369,7 @@ namespace FloatingDamageNumbers
                 float stackSpacing = StackIndex * (distanceScale * DamageNumberSettings.StackSpacingMultiplier);
                 Vector3 upVector = cam.transform.up;
 
-                transform.position = basePos + DamageNumberSettings.BaseSpawnOffset 
+                transform.position = basePos + DamageNumberSettings.BaseSpawnOffset
                                      + (upVector * (distanceElevation + stackSpacing));
             }
             else
@@ -404,7 +402,7 @@ namespace FloatingDamageNumbers
         private static int _cameraFrame = -1;
         private static Camera? _cachedCamera;
 
-        private static Camera? GetCamera()
+        public static Camera? ResolveActiveCamera()
         {
             int frame = Time.frameCount;
             if (frame == _cameraFrame && _cachedCamera != null && _cachedCamera.isActiveAndEnabled)
@@ -494,7 +492,6 @@ namespace FloatingDamageNumbers
             {
                 if (tmpFont != null && tmpFont.name.Contains("LiberationSans SDF") && !tmpFont.name.Contains("Fallback"))
                 {
-                    AdvLogger.LogError($"[FloatingDamageNumbers] Cloning TMP_FontAsset: {tmpFont.name}", LogOptions._AlertDevAndCustomerInGame);
                     _cachedFontAsset = Instantiate(tmpFont);
                     if (_cachedFontAsset.material != null)
                     {
