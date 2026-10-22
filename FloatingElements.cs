@@ -42,6 +42,7 @@ namespace FloatingDamageNumbers
 
         private float _popTimer;
         private Color _baseColor;
+        private bool _textMeshDirty;
 
         public bool IsExpired(float currentTime) => (currentTime - CreationTime) >= Lifetime;
 
@@ -145,7 +146,7 @@ namespace FloatingDamageNumbers
             _baseColor = DamageNumberSettings.GetColor(damageType);
             _popTimer = isLargeHit ? DamageNumberSettings.PopBounceDuration : 0f;
 
-            UpdateTextDisplay();
+            UpdateTextDisplay(true);
 
             transform.position = worldHitPosition + DamageNumberSettings.BaseSpawnOffset;
             gameObject.SetActive(true);
@@ -196,7 +197,7 @@ namespace FloatingDamageNumbers
                 _popTimer = DamageNumberSettings.PopBounceDuration;
             }
 
-            UpdateTextDisplay();
+            UpdateTextDisplay(false);
         }
 
         public void MarkLargeHit()
@@ -206,12 +207,12 @@ namespace FloatingDamageNumbers
                 IsLargeHit = true;
                 float extra = DamageNumberSettings.NumberLifetime * DamageNumberSettings.LargeHitLifetimeMultiplier;
                 Lifetime = Mathf.Max(Lifetime, (Time.time - CreationTime) + extra);
-                UpdateTextDisplay();
+                UpdateTextDisplay(false);
             }
             _popTimer = DamageNumberSettings.PopBounceDuration;
         }
 
-        private void UpdateTextDisplay()
+        private void UpdateTextDisplay(bool rebuildMesh)
         {
             string damageText;
             if (DamageNumberSettings.FormatAbbreviatedThousands && TotalDamage >= 1000f)
@@ -239,7 +240,20 @@ namespace FloatingDamageNumbers
             if (_mainText != null)
             {
                 _mainText.text = damageText;
-                _mainText.ForceMeshUpdate(); // updates renderedWidth immediately
+                _textMeshDirty = true;
+            }
+
+            if (rebuildMesh)
+            {
+                RefreshTextMeshAndIcon();
+            }
+        }
+
+        private void RefreshTextMeshAndIcon()
+        {
+            if (_mainText != null)
+            {
+                _mainText.ForceMeshUpdate();
             }
 
             // image icon for damage type
@@ -266,6 +280,8 @@ namespace FloatingDamageNumbers
             {
                 _damageSpriteRenderer?.enabled = false;
             }
+
+            _textMeshDirty = false;
         }
 
         private void LateUpdate()
@@ -277,6 +293,11 @@ namespace FloatingDamageNumbers
             {
                 gameObject.SetActive(false);
                 return;
+            }
+
+            if (_textMeshDirty)
+            {
+                RefreshTextMeshAndIcon();
             }
 
             // Resolve the 3D world position of the damage number so we can anchor to the construct

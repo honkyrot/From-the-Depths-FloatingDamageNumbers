@@ -20,7 +20,9 @@ namespace FloatingDamageNumbers
         [HarmonyPrefix]
         private static void Prefix(Block __instance, out float __state)
         {
-            __state = __instance != null ? __instance.CurrentHealth : 0f;
+            __state = DamageNumberSettings.EnableDamageNumbers && __instance != null
+                ? __instance.CurrentHealth
+                : 0f;
         }
 
         [HarmonyPostfix]

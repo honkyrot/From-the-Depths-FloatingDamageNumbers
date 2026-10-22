@@ -39,6 +39,11 @@ namespace FloatingDamageNumbers
         /// </summary>
         public static void RecordDamage(MainConstruct? construct, DamageType damageType, float damageAmount, Vector3 worldPosition)
         {
+            if (!DamageNumberSettings.EnableDamageNumbers)
+            {
+                return;
+            }
+
             if (damageAmount < DamageNumberSettings.MinDamageToDisplay || float.IsNaN(damageAmount) || float.IsInfinity(damageAmount))
             {
                 return;
@@ -92,6 +97,12 @@ namespace FloatingDamageNumbers
         /// </summary>
         public static void Update(float currentTime)
         {
+            if (!DamageNumberSettings.EnableDamageNumbers)
+            {
+                Clear();
+                return;
+            }
+
             // Draining the pending buckets into a local list to minimize lock contention
             _drainedBuckets.Clear();
             lock (_syncLock)
@@ -114,6 +125,8 @@ namespace FloatingDamageNumbers
 
             // Prune expired numbers from ship queues and compute dynamic stack indices
             List<int>? emptyShipKeys = null;
+            float stackProximityDistance = DamageNumberSettings.StackProximityDistance;
+            float stackProximityDistanceSquared = stackProximityDistance * stackProximityDistance;
 
             foreach (var kvp in _shipQueues)
             {
@@ -153,8 +166,8 @@ namespace FloatingDamageNumbers
                             FloatingElements prior = queue[j];
                             if (prior != null && prior.gameObject.activeSelf)
                             {
-                                float dist = Vector3.Distance(current.LastWorldHitPosition, prior.LastWorldHitPosition);
-                                if (dist <= DamageNumberSettings.StackProximityDistance)
+                                Vector3 offset = current.LastWorldHitPosition - prior.LastWorldHitPosition;
+                                if (offset.sqrMagnitude <= stackProximityDistanceSquared)
                                 {
                                     stack++;
                                 }
@@ -191,6 +204,8 @@ namespace FloatingDamageNumbers
             bool isRapid = isExplosive || isFire || isLaser;
 
             FloatingElements? candidate = null;
+            float maxAccumulationDistance = DamageNumberSettings.MaxAccumulationDistance;
+            float maxAccumulationDistanceSquared = maxAccumulationDistance * maxAccumulationDistance;
 
             if (DamageNumberSettings.AccumulateSustainedFire)
             {
@@ -214,8 +229,8 @@ namespace FloatingDamageNumbers
                             continue;
                         }
 
-                        float dist = Vector3.Distance(existing.LastWorldHitPosition, bucket.Position);
-                        if (dist > DamageNumberSettings.MaxAccumulationDistance)
+                        Vector3 offset = existing.LastWorldHitPosition - bucket.Position;
+                        if (offset.sqrMagnitude > maxAccumulationDistanceSquared)
                         {
                             continue;
                         }
