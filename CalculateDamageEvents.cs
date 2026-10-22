@@ -10,11 +10,11 @@ namespace FloatingDamageNumbers
     /// Harmony patch intercepting Block.ApplyDamage to record damage dealt, damage type,
     /// and spatial hit coordinates on the construct.
     /// </summary>
-    [HarmonyPatch(typeof(Block), "ApplyDamage", new Type[]
-    {
+    [HarmonyPatch(typeof(Block), "ApplyDamage",
+    [
         typeof(IDamageDescription),
         typeof(float)
-    })]
+    ])]
     internal static class CalculateDamageEvents
     {
         [HarmonyPrefix]
@@ -65,7 +65,7 @@ namespace FloatingDamageNumbers
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[FloatingDamageNumbers] Error in ApplyDamage Postfix: {ex}");
+                AdvLogger.LogError($"[FloatingDamageNumbers] Error in ApplyDamage Postfix: {ex}", LogOptions._AlertDevInGame);
             }
         }
     }

@@ -2,7 +2,7 @@
 
 Floating Damage Numbers adds optional, world-space combat feedback to [From the Depths](https://store.steampowered.com/app/268650/From_the_Depths/).
 
-Numbers appear above damaged blocks or, in Simple Mode, above the construct's center of mass. Damage types can be shown with colors and the game's damage icons.
+Numbers appear above the ships. Damage types can be shown with colors and the game's damage icons.
 
 ![image](readme/image1.png)
 
@@ -31,3 +31,7 @@ If performance or readability is a problem:
 4. Disable damage numbers with the toggle during very large battles.
 
 This mod has not been tested on Linux and Mac builds.
+
+## Personal note
+
+While I like damage numbers, remember that the guts of a ship is more imporant than raw numbers.
