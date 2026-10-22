@@ -393,10 +393,7 @@ namespace FloatingDamageNumbers
                 _mainText.color = c;
             }
 
-            if (_damageSpriteRenderer != null)
-            {
-                _damageSpriteRenderer.color = new Color(1f, 1f, 1f, alpha);
-            }
+            _damageSpriteRenderer?.color = new Color(1f, 1f, 1f, alpha);
         }
 
         private static int _cameraFrame = -1;

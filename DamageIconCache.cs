@@ -13,7 +13,7 @@ namespace FloatingDamageNumbers
     /// </summary>
     public static class DamageIconCache
     {
-        private static readonly Dictionary<DamageType, Sprite> _cache = new();
+        private static readonly Dictionary<DamageType, Sprite> _cache = [];
 
         public static Sprite? GetIcon(DamageType damageType)
         {

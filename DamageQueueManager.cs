@@ -39,15 +39,15 @@ namespace FloatingDamageNumbers
             public Vector3 Position { get; }
         }
 
-        private static readonly ConcurrentQueue<DamageEvent> _incomingDamage = new ConcurrentQueue<DamageEvent>();
-        private static readonly Dictionary<long, DamageBucket> _pendingBuckets = new Dictionary<long, DamageBucket>();
-        private static readonly List<DamageBucket> _drainedBuckets = new List<DamageBucket>();
+        private static readonly ConcurrentQueue<DamageEvent> _incomingDamage = new();
+        private static readonly Dictionary<long, DamageBucket> _pendingBuckets = [];
+        private static readonly List<DamageBucket> _drainedBuckets = [];
 
         // Per-ship active damage number lists (Key: MainConstruct UniqueId, or -1 for unanchored)
-        private static readonly Dictionary<int, List<FloatingElements>> _shipQueues = new Dictionary<int, List<FloatingElements>>();
+        private static readonly Dictionary<int, List<FloatingElements>> _shipQueues = [];
 
         // Hard-capped object pool
-        private static readonly List<FloatingElements> _pool = new List<FloatingElements>();
+        private static readonly List<FloatingElements> _pool = [];
         private static GameObject? _poolRoot;
 
         /// <summary>
@@ -72,11 +72,11 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// If a construct is being actively repaired, this uses a custom "healing" damage type to display the amount of health restored.
         /// </summary>
-        public static void RecordHealing(MainConstruct? construct, float healingAmount)
-        {
-            Vector3 worldPosition = construct != null ? construct.CentreOfMass : Vector3.zero;
+        //public static void RecordHealing(MainConstruct? construct, float healingAmount)
+        //{
+        //    Vector3 worldPosition = construct != null ? construct.CentreOfMass : Vector3.zero;
 
-        }
+        //}
 
         /// <summary>
         /// Processes coalesced buckets, updates lifetimes, and assigns vertical stack indices.
@@ -135,7 +135,7 @@ namespace FloatingDamageNumbers
 
                 if (queue.Count == 0)
                 {
-                    emptyShipKeys ??= new List<int>();
+                    emptyShipKeys ??= [];
                     emptyShipKeys.Add(shipId);
                     continue;
                 }
@@ -304,10 +304,7 @@ namespace FloatingDamageNumbers
             if (DamageNumberSettings.EnableQueuePerShip && queue.Count > DamageNumberSettings.MaxNumbersPerShip)
             {
                 FloatingElements oldest = queue[0];
-                if (oldest != null)
-                {
-                    oldest.gameObject.SetActive(false);
-                }
+                oldest?.gameObject.SetActive(false);
                 queue.RemoveAt(0);
             }
         }
@@ -318,7 +315,7 @@ namespace FloatingDamageNumbers
 
             while (_pool.Count < DamageNumberSettings.MaxWorldPoolSize)
             {
-                GameObject go = new GameObject($"FloatingDamageNumber_3D_{_pool.Count}");
+                GameObject go = new($"FloatingDamageNumber_3D_{_pool.Count}");
                 if (_poolRoot != null)
                 {
                     go.transform.SetParent(_poolRoot.transform);
@@ -346,7 +343,7 @@ namespace FloatingDamageNumbers
             // If under capacity, create a new instance and add it to the pool
             if (_pool.Count < DamageNumberSettings.MaxWorldPoolSize)
             {
-                GameObject go = new GameObject($"FloatingDamageNumber_3D_{_pool.Count}");
+                GameObject go = new($"FloatingDamageNumber_3D_{_pool.Count}");
                 if (_poolRoot != null)
                 {
                     go.transform.SetParent(_poolRoot.transform);
@@ -399,7 +396,7 @@ namespace FloatingDamageNumbers
             {
                 foreach (var item in q)
                 {
-                    if (item != null) item.gameObject.SetActive(false);
+                    item?.gameObject.SetActive(false);
                 }
             }
             _shipQueues.Clear();
