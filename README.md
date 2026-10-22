@@ -2,7 +2,7 @@
 
 Floating Damage Numbers adds optional, world-space combat feedback to [From the Depths](https://store.steampowered.com/app/268650/From_the_Depths/).
 
-Numbers appear above the ships. Damage types can be shown with colors and the game's damage icons.
+Damage recieved makes numbers appear above the ships. Damage types can be shown with colors and the game's damage icons.
 
 ![image](readme/image1.png)
 
