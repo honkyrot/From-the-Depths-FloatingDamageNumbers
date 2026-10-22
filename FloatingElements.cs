@@ -3,6 +3,7 @@ using BrilliantSkies.Ftd.DamageModels;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using BrilliantSkies.Core.Logger;
 
 namespace FloatingDamageNumbers
 {
@@ -19,6 +20,8 @@ namespace FloatingDamageNumbers
         private TextMeshPro? _mainText;
         private MeshRenderer? _mainRenderer;
         private SpriteRenderer? _damageSpriteRenderer;
+        private static Material? _sharedSpriteMaterial;
+
         public DamageType Type { get; private set; }
         public float PreviousDamage { get; private set; }
         public float TotalDamage { get; private set; }
@@ -51,42 +54,40 @@ namespace FloatingDamageNumbers
             EnsureComponents();
         }
 
+
         private void EnsureComponents()
         {
             if (_mainText != null) return;
 
             TMP_FontAsset? fontAsset = GetFontAsset();
 
-            // Main TextMeshPro
             _mainText = gameObject.AddComponent<TextMeshPro>();
             _mainRenderer = gameObject.GetComponent<MeshRenderer>();
             _mainText.font = fontAsset;
 
-            if (_mainRenderer != null && fontAsset != null && fontAsset.material != null)
+            if (fontAsset != null && fontAsset.material != null)
             {
-                _mainRenderer.sharedMaterial = fontAsset.material;
-                _mainRenderer.sortingOrder = 9999;
-                _mainRenderer.sortingLayerName = "UI";
+                _mainText.fontSharedMaterial = fontAsset.material;
             }
 
-            // alignment, wrapping, overflow, font size
+            if (_mainRenderer != null)
+            {
+                _mainRenderer.sortingOrder = 30000;
+                _mainRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _mainRenderer.receiveShadows = false;
+            }
+
             _mainText.alignment = TextAlignmentOptions.Midline;
             _mainText.textWrappingMode = TextWrappingModes.NoWrap;
             _mainText.overflowMode = TextOverflowModes.Overflow;
             _mainText.fontSize = 16f;
 
-            // pop scaling from middle
             RectTransform rt = _mainText.rectTransform;
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(10f, 2f);
 
-            // outline
-            _mainText.fontMaterial.EnableKeyword("OUTLINE_ON");
-            _mainText.fontMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.05f);
-
             EnsureSpriteRenderer();
         }
-
         private void EnsureSpriteRenderer()
         {
             if (_damageSpriteRenderer != null) return;
@@ -94,11 +95,25 @@ namespace FloatingDamageNumbers
             GameObject imageObj = new("DamageTypeSprite");
             imageObj.transform.SetParent(transform, false);
             _damageSpriteRenderer = imageObj.AddComponent<SpriteRenderer>();
-            _damageSpriteRenderer.sortingOrder = 10000;
-            _damageSpriteRenderer.sortingLayerName = "UI";
+
+            if (_sharedSpriteMaterial == null && _damageSpriteRenderer.sharedMaterial != null)
+            {
+                _sharedSpriteMaterial = new Material(_damageSpriteRenderer.sharedMaterial)
+                {
+                    renderQueue = 4501 // testing order layers
+                };
+                _sharedSpriteMaterial.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+                _sharedSpriteMaterial.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+            }
+
+            if (_sharedSpriteMaterial != null)
+            {
+                _damageSpriteRenderer.sharedMaterial = _sharedSpriteMaterial;
+            }
+
+            _damageSpriteRenderer.sortingOrder = 30001;
             imageObj.transform.localPosition = new Vector3(1f, 0f, -0.01f);
         }
-
         public void Initialize(
             MainConstruct? construct,
             DamageType damageType,
@@ -254,6 +269,10 @@ namespace FloatingDamageNumbers
             if (_mainText != null)
             {
                 _mainText.ForceMeshUpdate();
+                if (_mainRenderer != null && _cachedFontAsset != null && _cachedFontAsset.material != null)
+                {
+                    _mainRenderer.sharedMaterial = _cachedFontAsset.material;
+                }
             }
 
             // image icon for damage type
@@ -387,32 +406,43 @@ namespace FloatingDamageNumbers
 
         private static Camera? GetCamera()
         {
-            // Cache the camera lookup once per frame to avoid repeated Camera.allCameras allocations
             int frame = Time.frameCount;
-            if (frame == _cameraFrame) return _cachedCamera;
+            if (frame == _cameraFrame && _cachedCamera != null && _cachedCamera.isActiveAndEnabled)
+                return _cachedCamera;
             _cameraFrame = frame;
 
+            // see for camera main
             Camera? cam = Camera.main;
-            if (cam != null && cam.isActiveAndEnabled) { _cachedCamera = cam; return cam; }
-            cam = Camera.current;
-            if (cam != null && cam.isActiveAndEnabled) { _cachedCamera = cam; return cam; }
+            if (cam != null && cam.isActiveAndEnabled)
+            {
+                _cachedCamera = cam;
+                return cam;
+            }
 
+            // fallback to the highest-depth active perspective camera rendering to the screen
             var all = Camera.allCameras;
+            Camera? bestCam = null;
+            float highestDepth = float.MinValue;
+
             for (int i = 0; i < all.Length; i++)
             {
-                if (all[i] != null && all[i].isActiveAndEnabled && !all[i].orthographic && all[i].targetTexture == null)
+                Camera c = all[i];
+                if (c != null && c.isActiveAndEnabled && !c.orthographic && c.targetTexture == null)
                 {
-                    _cachedCamera = all[i];
-                    return all[i];
+                    if (c.depth >= highestDepth)
+                    {
+                        highestDepth = c.depth;
+                        bestCam = c;
+                    }
                 }
             }
-            _cachedCamera = all.Length > 0 ? all[0] : null;
+
+            _cachedCamera = bestCam ?? (all.Length > 0 ? all[0] : null);
             return _cachedCamera;
         }
 
         private static Font GetFont()
         {
-            // there's that one font I want to grab that's used in the Hologram Projectors but I don't know the name of it.
             if (_cachedFont != null) return _cachedFont;
 
             try
@@ -459,10 +489,53 @@ namespace FloatingDamageNumbers
         {
             if (_cachedFontAsset != null) return _cachedFontAsset;
 
-            Font font = GetFont();
-            if (font == null) return null;
+            // attempt cloning LiberationSans SDF font asset from TMP resources, which is the default TMP font in FTD
+            foreach (var tmpFont in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
+            {
+                if (tmpFont != null && tmpFont.name.Contains("LiberationSans SDF") && !tmpFont.name.Contains("Fallback"))
+                {
+                    AdvLogger.LogError($"[FloatingDamageNumbers] Cloning TMP_FontAsset: {tmpFont.name}", LogOptions._AlertDevAndCustomerInGame);
+                    _cachedFontAsset = Instantiate(tmpFont);
+                    if (_cachedFontAsset.material != null)
+                    {
+                        _cachedFontAsset.material = new Material(_cachedFontAsset.material);
+                    }
+                    break;
+                }
+            }
 
-            _cachedFontAsset = TMP_FontAsset.CreateFontAsset(font);
+            // Fallback to dynamic OS/builtin font
+            if (_cachedFontAsset == null)
+            {
+                Font font = GetFont();
+                if (font == null) return null;
+                _cachedFontAsset = TMP_FontAsset.CreateFontAsset(font);
+            }
+
+            if (_cachedFontAsset != null && _cachedFontAsset.material != null)
+            {
+                Material mat = _cachedFontAsset.material;
+
+                // Swap to the built-in TMP Overlay shader variant
+                Shader? overlayShader = Shader.Find("TextMeshPro/Mobile/Distance Field - Overlay")
+                                     ?? Shader.Find("TextMeshPro/Distance Field Overlay")
+                                     ?? Shader.Find("TextMeshPro/Distance Field-Overlay");
+
+                if (overlayShader != null)
+                {
+                    mat.shader = overlayShader;
+                }
+
+                mat.EnableKeyword("OUTLINE_ON");
+                mat.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.05f);
+
+                // 4500 renders after all GrabPasses, volumetric smoke, and transparent effects
+                mat.renderQueue = 4500;
+                mat.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+                mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+                mat.SetInt("_ZWrite", 0);
+            }
+
             return _cachedFontAsset;
         }
     }

@@ -47,7 +47,7 @@ namespace FloatingDamageNumbers
 
         #region Visual & Scale Settings
 
-        public static float BaseTextScale = 0.035f;
+        public static float BaseTextScale = 0.03f;
         [Obsolete("maybe later, but I felt like different scales mattered a little less right now")]
         public static float LargeHitTextScale = 0.05f;
         public static float PopBounceScale = 1.25f;
@@ -61,7 +61,7 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// Reference distance in meters where scale is considered 1.0x. Larger numbers will scale down, smaller numbers will scale up. This is used in conjunction with DistanceScaleExponent to determine the final scale of the number based on distance from the camera.
         /// </summary>
-        public static float ReferenceDistance = 60f;
+        public static float ReferenceDistance = 20f;
 
         /// <summary>
         /// Absolute maximum 3D scale clamp to prevent distant numbers from ballooning over targets.
@@ -85,7 +85,7 @@ namespace FloatingDamageNumbers
         /// Values below 1.0 dampen elevation gain at long ranges so distant numbers stay near the target,
         /// while giving close-range targets enough height to stay clear of the superstructure.
         /// </summary>
-        public static float DistanceElevationExponent = 0.65f;
+        public static float DistanceElevationExponent = 0.6f;
 
         /// <summary>
         /// Absolute ceiling clamp for sky elevation in meters.

@@ -43,17 +43,17 @@ namespace FloatingDamageNumbers
             public bool AggregateOnlySameDamageType { get; set; } = true;
 
             // Shared - Text Scale & Distance
-            public float BaseTextScale { get; set; } = 0.035f;
+            public float BaseTextScale { get; set; } = 0.03f;
             public float PopBounceScale { get; set; } = 1.25f;
             public float PopBounceDuration { get; set; } = 0.5f;
-            public float ReferenceDistance { get; set; } = 60f;
+            public float ReferenceDistance { get; set; } = 20f;
             public float DistanceScaleExponent { get; set; } = 0.75f;
             public float MinTextScale { get; set; } = 0.5f;
             public float MaxTextScale { get; set; } = 40f;
 
             // Shared - Sky Elevation & Stacking
             public float DistanceElevationFactor { get; set; } = 1.25f;
-            public float DistanceElevationExponent { get; set; } = 0.65f;
+            public float DistanceElevationExponent { get; set; } = 0.6f;
             public float MaxDistanceElevation { get; set; } = 140f;
             public float StackSpacingMultiplier { get; set; } = 1.35f;
             public float StackProximityDistance { get; set; } = 15f;
@@ -599,10 +599,10 @@ namespace FloatingDamageNumbers
             table.NameWhereApplicable = "Scale & Distance Dynamics";
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.01f, 0.10f, 0.005f, 0.035f,
+                _focus, 0.01f, 0.10f, 0.001f, 0.03f,
                 "Base Text Scale",
                 I => I.BaseTextScale,
-                "Base font scale of floating text at reference distance (default 0.035)."
+                "Base font scale of floating text at reference distance (default 0.03)."
             ), 0, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
@@ -620,10 +620,10 @@ namespace FloatingDamageNumbers
             ), 1, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 10f, 200f, 5f, 60f,
+                _focus, 0f, 200f, 5f, 20f,
                 "Reference Distance (m)",
                 I => I.ReferenceDistance,
-                "Camera distance in meters where scale is considered 1.0x (default 60m)."
+                "Camera distance in meters where scale is considered 1.0x (default 20m)."
             ), 1, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(
@@ -671,10 +671,10 @@ namespace FloatingDamageNumbers
             ), 0, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.0f, 1.5f, 0.01f, 0.65f,
+                _focus, 0.0f, 1.5f, 0.01f, 0.6f,
                 "Elevation Curve Exponent",
                 I => I.DistanceElevationExponent,
-                "Sub-linear power curve for elevation growth with distance (default 0.65)."
+                "Sub-linear power curve for elevation growth with distance (default 0.6)."
             ), 0, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(
