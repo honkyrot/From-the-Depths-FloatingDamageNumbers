@@ -399,3 +399,10 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# release file
+!bin/
+!bin/Release/
+!bin/Release/netstandard2.1/
+bin/Release/netstandard2.1/*
+!bin/Release/netstandard2.1/FloatingDamageNumbers.dll
