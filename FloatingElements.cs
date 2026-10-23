@@ -433,7 +433,6 @@ namespace FloatingDamageNumbers
                 // Calculate 3D world-space elevation first
                 float distFactor = Mathf.Pow(Mathf.Max(5f, dist) / refDist, DamageNumberSettings.DistanceScaleExponent);
                 float worldDistanceScale = Mathf.Clamp((DamageNumberSettings.BaseTextScale * refDist) * distFactor, DamageNumberSettings.MinTextScale, DamageNumberSettings.MaxTextScale);
-                worldDistanceScale *= DamageNumberSettings.BaseTextScaleMultiplier;
 
                 float elevationFactor = Mathf.Pow(Mathf.Max(1f, dist), DamageNumberSettings.DistanceElevationExponent);
                 float distanceElevation = Mathf.Clamp(
@@ -462,6 +461,7 @@ namespace FloatingDamageNumbers
                 // In 3D, angular size is proportional to (worldScale / dist).
                 float baseUiScale = (worldDistanceScale / Mathf.Max(5f, dist)) * (refDist * 1.5f);
                 baseUiScale = Mathf.Clamp(baseUiScale, 0.4f, 2.5f);
+                baseUiScale *= DamageNumberSettings.BaseTextScaleMultiplier;
 
                 float uiScale = baseUiScale;
                 if (_popTimer > 0f)

@@ -745,7 +745,7 @@ namespace FloatingDamageNumbers
             table.NameWhereApplicable = "Lifetime & Animation";
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.5f, 8.0f, 0.25f, 3.0f,
+                _focus, 0.5f, 10.0f, 0.1f, 3.0f,
                 "Number Lifetime (s)",
                 I => I.NumberLifetime,
                 "Base duration before damage numbers fade out (default 3.0s)."
