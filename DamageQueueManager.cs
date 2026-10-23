@@ -23,20 +23,12 @@ namespace FloatingDamageNumbers
             public int HitCount;
         }
 
-        private readonly struct DamageEvent
+        private readonly struct DamageEvent(MainConstruct? construct, DamageType type, float amount, Vector3 position)
         {
-            public DamageEvent(MainConstruct? construct, DamageType type, float amount, Vector3 position)
-            {
-                Construct = construct;
-                Type = type;
-                Amount = amount;
-                Position = position;
-            }
-
-            public MainConstruct? Construct { get; }
-            public DamageType Type { get; }
-            public float Amount { get; }
-            public Vector3 Position { get; }
+            public MainConstruct? Construct { get; } = construct;
+            public DamageType Type { get; } = type;
+            public float Amount { get; } = amount;
+            public Vector3 Position { get; } = position;
         }
 
         private static readonly ConcurrentQueue<DamageEvent> _incomingDamage = new();
@@ -90,6 +82,7 @@ namespace FloatingDamageNumbers
                 return;
             }
 
+            // Drain all incoming damage events into coalesced buckets for this frame.
             DrainIncomingDamageToBuckets();
 
             // Drain aggregated buckets into a local list for processing this frame.
@@ -190,6 +183,7 @@ namespace FloatingDamageNumbers
             }
         }
 
+        // Drains all incoming damage events into coalesced buckets for this frame.
         private static void DrainIncomingDamageToBuckets()
         {
             while (_incomingDamage.TryDequeue(out DamageEvent damageEvent))
@@ -224,6 +218,7 @@ namespace FloatingDamageNumbers
             }
         }
 
+        // Processes a single coalesced damage bucket, either merging it into an existing floating number or spawning a new one.
         private static void ProcessBucket(DamageBucket bucket, float currentTime)
         {
             int constructId = bucket.Construct != null ? bucket.Construct.UniqueId : -1;

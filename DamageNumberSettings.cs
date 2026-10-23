@@ -13,6 +13,8 @@ namespace FloatingDamageNumbers
         //public static bool ShowHealingNumbers = false; // show green healing numbers when a block is repaired or healed, maybe later 
         // either health per block, construct effective health, or blocks alive.
 
+        public static bool UseDPSMode = false; // if true, numbers will show damage per second instead of total damage.
+
         #region Shared Settings
 
         #region Damage Type Colors

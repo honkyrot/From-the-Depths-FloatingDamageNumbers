@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="bin\Release\netstandard2.1\FloatingDamageNumbers.dll" />
     <None Include="FloatingElements.cs" />
   </ItemGroup>
 

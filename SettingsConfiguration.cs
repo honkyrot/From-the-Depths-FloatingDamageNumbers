@@ -34,6 +34,7 @@ namespace FloatingDamageNumbers
             // Master Controls
             public bool EnableDamageNumbers { get; set; } = true;
             //public bool ShowHealingNumbers { get; set; } = false;
+            public bool UseDPSMode { get; set; } = false;
             public bool EnableDetailedSettings { get; set; } = false;
 
             // Shared - Formatting & Icons
@@ -103,6 +104,7 @@ namespace FloatingDamageNumbers
         {
             DamageNumberSettings.EnableDamageNumbers = EnableDamageNumbers;
             //DamageNumberSettings.ShowHealingNumbers = ShowHealingNumbers;
+            DamageNumberSettings.UseDPSMode = UseDPSMode;
             DamageNumberSettings.EnableDetailedSettings = EnableDetailedSettings;
 
             DamageNumberSettings.ShowAssociatedIcon = ShowAssociatedIcon;
@@ -155,6 +157,11 @@ namespace FloatingDamageNumbers
         //    set { Internal.ShowHealingNumbers = value; DamageNumberSettings.ShowHealingNumbers = value; }
         //}
 
+        public bool UseDPSMode
+        {
+            get => Internal.UseDPSMode;
+            set { Internal.UseDPSMode = value; DamageNumberSettings.UseDPSMode = value; }
+        }
         public bool EnableDetailedSettings
         {
             get => Internal.EnableDetailedSettings;
@@ -492,6 +499,13 @@ namespace FloatingDamageNumbers
             //    "Display green floating numbers when damaged blocks are repaired.",
             //    I => I.ShowHealingNumbers
             //));
+
+            table.AddInterpretter(UIHelper.Bool(
+                _focus,
+                "DPS Mode",
+                "Display damage numbers as Damage Per Second (DPS) instead of raw damage. (default: false)",
+                I => I.UseDPSMode
+            ));
         }
 
         private void ModeSection()

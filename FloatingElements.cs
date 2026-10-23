@@ -25,6 +25,7 @@ namespace FloatingDamageNumbers
         public DamageType Type { get; private set; }
         public float PreviousDamage { get; private set; }
         public float TotalDamage { get; private set; }
+        public float CurrentDPS { get; private set; }
         public int HitCount { get; private set; }
 
         public bool IsLargeHit { get; private set; }
@@ -46,6 +47,13 @@ namespace FloatingDamageNumbers
         private float _popTimer;
         private Color _baseColor;
         private bool _textMeshDirty;
+
+        private const int MaxDpsBuckets = 10;
+        private readonly float[] _dpsSecondBuckets = new float[MaxDpsBuckets];
+        private int _dpsBucketIndex;
+        private int _dpsCompletedSeconds;
+        private float _damageThisCurrentSecond;
+        private float _nextDpsUpdateTime;
 
         public bool IsExpired(float currentTime) => (currentTime - CreationTime) >= Lifetime;
 
@@ -135,8 +143,21 @@ namespace FloatingDamageNumbers
             LastHitTime = currentTime;
             StackIndex = 0;
 
+            if (DamageNumberSettings.UseDPSMode)
+            {
+                for (int i = 0; i < MaxDpsBuckets; i++)
+                {
+                    _dpsSecondBuckets[i] = 0f;
+                }
+                _damageThisCurrentSecond = initialDamage;
+                _dpsBucketIndex = -1;
+                _dpsCompletedSeconds = 0;
+                _nextDpsUpdateTime = currentTime + 1.0f;
+                CurrentDPS = initialDamage;
+            }
+
             float baseLife = DamageNumberSettings.NumberLifetime;
-            if (isLargeHit)
+            if (isLargeHit && !DamageNumberSettings.UseDPSMode)
             {
                 baseLife *= DamageNumberSettings.LargeHitLifetimeMultiplier;
             }
@@ -177,8 +198,13 @@ namespace FloatingDamageNumbers
             HitCount++;
             LastHitTime = currentTime;
 
+            if (DamageNumberSettings.UseDPSMode)
+            {
+                _damageThisCurrentSecond += amount;
+            }
+
             float baseLife = DamageNumberSettings.NumberLifetime;
-            if (IsLargeHit)
+            if (IsLargeHit && !DamageNumberSettings.UseDPSMode)
             {
                 baseLife *= DamageNumberSettings.LargeHitLifetimeMultiplier;
             }
@@ -212,7 +238,11 @@ namespace FloatingDamageNumbers
                 _popTimer = DamageNumberSettings.PopBounceDuration;
             }
 
-            UpdateTextDisplay(false);
+            // Only update displays immediately in standard mode; DPS mode updates on a fixed 1-second cadence
+            if (!DamageNumberSettings.UseDPSMode)
+            {
+                UpdateTextDisplay(false);
+            }
         }
 
         public void MarkLargeHit()
@@ -220,15 +250,16 @@ namespace FloatingDamageNumbers
             if (!IsLargeHit)
             {
                 IsLargeHit = true;
-                float extra = DamageNumberSettings.NumberLifetime * DamageNumberSettings.LargeHitLifetimeMultiplier;
+                float extra = DamageNumberSettings.NumberLifetime * (DamageNumberSettings.UseDPSMode ? DamageNumberSettings.LargeHitLifetimeMultiplier : 1f);
                 Lifetime = Mathf.Max(Lifetime, (Time.time - CreationTime) + extra);
-                UpdateTextDisplay(false);
+                UpdateTextDisplay(true);
             }
             _popTimer = DamageNumberSettings.PopBounceDuration;
         }
 
         private void UpdateTextDisplay(bool rebuildMesh)
         {
+            // standard mode
             string damageText;
             if (DamageNumberSettings.FormatAbbreviatedThousands && TotalDamage >= 1000f)
             {
@@ -258,6 +289,41 @@ namespace FloatingDamageNumbers
                 _textMeshDirty = true;
             }
 
+            if (rebuildMesh)
+            {
+                RefreshTextMeshAndIcon();
+            }
+        }
+
+        private void UpdateTextDisplayasDPS(bool rebuildMesh)
+        {
+            string damageText;
+            if (DamageNumberSettings.FormatAbbreviatedThousands && CurrentDPS >= 1000f)
+            {
+                damageText = (CurrentDPS / 1000f).ToString("0.#") + "k DPS";
+            }
+            else
+            {
+                damageText = Mathf.RoundToInt(CurrentDPS).ToString("N0") + " DPS";
+            }
+
+            if (DamageNumberSettings.ShowDamageTypeTag)
+            {
+                if (Type == DamageType.None)
+                {
+                    damageText = $"[OTHER] {damageText}";
+                }
+                else
+                {
+                    string str_type = Type.ToString().ToUpper();
+                    damageText = $"[{str_type}] {damageText}";
+                }
+            }
+            if (_mainText != null)
+            {
+                _mainText.text = damageText;
+                _textMeshDirty = true;
+            }
             if (rebuildMesh)
             {
                 RefreshTextMeshAndIcon();
@@ -311,6 +377,32 @@ namespace FloatingDamageNumbers
             {
                 gameObject.SetActive(false);
                 return;
+            }
+
+            //// In DPS mode, update display strictly once per second so sustained combat is readable
+            if (DamageNumberSettings.UseDPSMode && currentTime >= _nextDpsUpdateTime)
+            {
+                int windowSize = Mathf.Clamp(Mathf.RoundToInt(DamageNumberSettings.NumberLifetime), 1, MaxDpsBuckets);
+
+                while (currentTime >= _nextDpsUpdateTime)
+                {
+                    _nextDpsUpdateTime += 1.0f;
+                    _dpsBucketIndex = (_dpsBucketIndex + 1) % windowSize;
+                    _dpsSecondBuckets[_dpsBucketIndex] = _damageThisCurrentSecond;
+                    _damageThisCurrentSecond = 0f;
+                    _dpsCompletedSeconds++;
+                }
+
+                float totalDamageInWindow = 0f;
+                for (int i = 0; i < windowSize; i++)
+                {
+                    totalDamageInWindow += _dpsSecondBuckets[i];
+                }
+
+                int divisor = Mathf.Clamp(_dpsCompletedSeconds, 1, windowSize);
+                CurrentDPS = totalDamageInWindow / divisor;
+
+                UpdateTextDisplayasDPS(false);
             }
 
             if (_textMeshDirty)

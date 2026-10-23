@@ -57,7 +57,7 @@ namespace FloatingDamageNumbers
             DamageQueueManager.PrewarmPool();
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             DamageQueueManager.Update(Time.time, Time.deltaTime);
         }

@@ -10,6 +10,7 @@ Damage received makes numbers appear above the ships. Damage types can be shown 
 
 - Simple Mode for a cleaner, consolidated view above each construct.
 - Detailed Mode for hit-position-based numbers with spatial aggregation.
+- Additional options for Damage Per Second counters.
 - Damage-type colors and optional damage icons or text tags.
 - Aggregation of rapid repeated hits to reduce visual clutter.
 
