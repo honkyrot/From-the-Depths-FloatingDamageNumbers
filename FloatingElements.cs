@@ -53,6 +53,9 @@ namespace FloatingDamageNumbers
         private int _dpsCompletedSeconds;
         private float _damageThisCurrentSecond;
         private float _nextDpsUpdateTime;
+        // temp fields
+        private float _lastAlpha = -1f;
+        private float _lastScale = -1f;
 
         public bool IsExpired(float currentTime) => (currentTime - CreationTime) >= Lifetime;
 
@@ -92,6 +95,8 @@ namespace FloatingDamageNumbers
 
             _rectTransform.pivot = new Vector2(0.5f, 0.5f);
             _rectTransform.sizeDelta = new Vector2(200f, 50f);
+            _rectTransform.anchorMin = Vector2.zero;
+            _rectTransform.anchorMax = Vector2.zero;
 
             EnsureSpriteRenderer();
         }
@@ -168,7 +173,12 @@ namespace FloatingDamageNumbers
                 LocalHitPosition = worldHitPosition;
             }
 
+            // color and alpha
             _baseColor = DamageNumberSettings.GetColor(damageType);
+            _lastAlpha = 1.0f;
+            _mainText?.color = _baseColor;
+            _damageIconImage?.color = Color.white;
+
             _popTimer = isLargeHit ? DamageNumberSettings.PopBounceDuration : 0f;
 
             UpdateTextDisplay(true);
@@ -321,8 +331,6 @@ namespace FloatingDamageNumbers
 
         private void RefreshTextMeshAndIcon()
         {
-            _mainText?.ForceMeshUpdate();
-
             if (DamageNumberSettings.ShowAssociatedIcon)
             {
                 EnsureSpriteRenderer();
@@ -334,17 +342,18 @@ namespace FloatingDamageNumbers
 
                     if (icon != null && _mainText != null)
                     {
-                        float rightEdge = _mainText.preferredWidth * 0.5f;
-                        float spacing = 6f; // pixel gap between text and icon
+                        Vector2 preferredSize = _mainText.GetPreferredValues();
+                        float rightEdge = preferredSize.x * 0.5f;
+                        float spacing = 6f;
                         float iconHalfWidth = _damageIconImage.rectTransform.sizeDelta.x * 0.5f;
 
                         _damageIconImage.rectTransform.anchoredPosition = new Vector2(rightEdge + spacing + iconHalfWidth, 0f);
                     }
                 }
             }
-            else
+            else if (_damageIconImage != null)
             {
-                _damageIconImage?.enabled = false;
+                _damageIconImage.enabled = false;
             }
 
             _textMeshDirty = false;
@@ -442,6 +451,7 @@ namespace FloatingDamageNumbers
                     _damageIconImage.enabled = true;
 
                 _rectTransform.position = new Vector3(screenPos.x, screenPos.y, 0f);
+                _rectTransform.anchoredPosition = new Vector2(screenPos.x, screenPos.y);
 
                 // Screen-space scale
                 // In 3D, angular size is proportional to (worldScale / dist).
@@ -455,7 +465,11 @@ namespace FloatingDamageNumbers
                     uiScale *= Mathf.Lerp(1.0f, DamageNumberSettings.PopBounceScale, t);
                 }
 
-                _rectTransform.localScale = Vector3.one * uiScale;
+                if (Mathf.Abs(uiScale - _lastScale) > 0.005f)
+                {
+                    _lastScale = uiScale;
+                    _rectTransform.localScale = new Vector3(uiScale, uiScale, 1f);
+                }
             }
 
             // Alpha fade out
@@ -466,14 +480,17 @@ namespace FloatingDamageNumbers
                 alpha = Mathf.Clamp01(remaining / DamageNumberSettings.FadeOutDuration);
             }
 
-            if (_mainText != null)
+            if (Mathf.Abs(alpha - _lastAlpha) > 0.004f)
             {
-                Color c = _baseColor;
-                c.a = alpha;
-                _mainText.color = c;
+                _lastAlpha = alpha;
+                if (_mainText != null)
+                {
+                    Color c = _baseColor;
+                    c.a = alpha;
+                    _mainText.color = c;
+                }
+                _damageIconImage?.color = new Color(1f, 1f, 1f, alpha);
             }
-
-            _damageIconImage?.color = new Color(1f, 1f, 1f, alpha);
         }
 
         private static int _cameraFrame = -1;
