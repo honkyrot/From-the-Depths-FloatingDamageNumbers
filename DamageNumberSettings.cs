@@ -50,6 +50,7 @@ namespace FloatingDamageNumbers
         #region Visual & Scale Settings
 
         public static float BaseTextScale = 0.03f;
+        public static float BaseTextScaleMultiplier = 1.0f;
         [Obsolete("maybe later, but I felt like different scales mattered a little less right now")]
         public static float LargeHitTextScale = 0.05f;
         public static float PopBounceScale = 1.25f;

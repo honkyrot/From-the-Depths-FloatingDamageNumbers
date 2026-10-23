@@ -4,15 +4,13 @@ using UnityEngine;
 
 namespace FloatingDamageNumbers
 {
-    /// <summary>
-    /// Unity MonoBehaviour host that updates the DamageQueueManager each frame.
-    /// Damage numbers are rendered directly in 3D world space using native TextMesh components.
-    /// </summary>
     public class FloatingDamageNumberRenderer : MonoBehaviour
     {
         private static FloatingDamageNumberRenderer? _instance;
-
         public static FloatingDamageNumberRenderer? Instance => _instance;
+
+        public static Canvas? OverlayCanvas { get; private set; }
+        public static RectTransform? CanvasRect { get; private set; }
 
         public static void EnsureInstance()
         {
@@ -23,6 +21,13 @@ namespace FloatingDamageNumbers
                     GameObject go = new("[FloatingDamageNumbers_Host]");
                     _instance = go.AddComponent<FloatingDamageNumberRenderer>();
                     DontDestroyOnLoad(go);
+
+                    OverlayCanvas = go.AddComponent<Canvas>();
+                    OverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    OverlayCanvas.sortingOrder = 20002;
+
+                    CanvasRect = go.GetComponent<RectTransform>();
+
                     DamageQueueManager.PrewarmPool();
                     AdvLogger.LogEvent("[FloatingDamageNumbers] Host GameObject and pool pre-warmed.");
                 }
@@ -72,4 +77,3 @@ namespace FloatingDamageNumbers
         }
     }
 }
-

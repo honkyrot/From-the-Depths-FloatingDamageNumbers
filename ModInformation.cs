@@ -15,7 +15,7 @@ internal static class ModInformation
 
     private static string? _myModDirPath;
 
-    private static SystemVersion _modVersion = new SystemVersion(0, 0, 0);
+    private static SystemVersion _modVersion = new(0, 0, 0);
 
     private static ulong _workshopID;
 

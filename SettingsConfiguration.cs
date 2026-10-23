@@ -44,7 +44,9 @@ namespace FloatingDamageNumbers
             public bool AggregateOnlySameDamageType { get; set; } = true;
 
             // Shared - Text Scale & Distance
+
             public float BaseTextScale { get; set; } = 0.03f;
+            public float BaseTextScaleMultiplier { get; set; } = 0.03f;
             public float PopBounceScale { get; set; } = 1.25f;
             public float PopBounceDuration { get; set; } = 0.5f;
             public float ReferenceDistance { get; set; } = 20f;
@@ -113,6 +115,7 @@ namespace FloatingDamageNumbers
             DamageNumberSettings.AggregateOnlySameDamageType = AggregateOnlySameDamageType;
 
             DamageNumberSettings.BaseTextScale = BaseTextScale;
+            DamageNumberSettings.BaseTextScaleMultiplier = BaseTextScaleMultiplier;
             DamageNumberSettings.PopBounceScale = PopBounceScale;
             DamageNumberSettings.PopBounceDuration = PopBounceDuration;
             DamageNumberSettings.ReferenceDistance = ReferenceDistance;
@@ -196,6 +199,12 @@ namespace FloatingDamageNumbers
         {
             get => Internal.BaseTextScale;
             set { Internal.BaseTextScale = value; DamageNumberSettings.BaseTextScale = value; }
+        }
+
+        public float BaseTextScaleMultiplier
+        {
+            get => Internal.BaseTextScaleMultiplier;
+            set { Internal.BaseTextScaleMultiplier = value; DamageNumberSettings.BaseTextScaleMultiplier = value; }
         }
 
         public float PopBounceScale
@@ -466,8 +475,6 @@ namespace FloatingDamageNumbers
         {
             MasterSection();
             ModeSection();
-            SharedSettingsSection();
-
             if (!_focus.EnableDetailedSettings)
             {
                 SimpleSettingsSection();
@@ -476,6 +483,7 @@ namespace FloatingDamageNumbers
             {
                 DetailedSettingsSection();
             }
+            SharedSettingsSection();
         }
 
         private void MasterSection()
@@ -606,18 +614,25 @@ namespace FloatingDamageNumbers
 
         private void SharedScaleSection()
         {
-            ScreenSegmentTable table = CreateTableSegment(2, 4);
+            ScreenSegmentTable table = CreateTableSegment(2, 5);
             table.SqueezeTable = false;
             table.SpaceBelow = Spacing;
             table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
             table.NameWhereApplicable = "Scale & Distance Dynamics";
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.01f, 0.10f, 0.001f, 0.03f,
+                _focus, 0.001f, 0.1f, 0.001f, 0.03f,
                 "Base Text Scale",
                 I => I.BaseTextScale,
                 "Base font scale of floating text at reference distance (default 0.03)."
             ), 0, 0);
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+                _focus, 0.0f, 10f, 0.01f, 1.0f,
+                "Text Scale Multiplier",
+                I => I.BaseTextScaleMultiplier,
+                "Multiplier for the base text scale (default 1.0)."
+            ), 1, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 1.0f, 2.5f, 0.05f, 1.25f,
@@ -627,38 +642,24 @@ namespace FloatingDamageNumbers
             ), 0, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(
+               _focus, 1f, 300f, 1f, 20f,
+               "Reference Distance (m)",
+               I => I.ReferenceDistance,
+               "Camera distance in meters where scale is considered 1.0x (default 20m). When increased, closer objects will appear larger, and farther objects will appear smaller."
+           ), 2, 0);
+
+            table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.1f, 1.5f, 0.05f, 0.5f,
                 "Pop Bounce Duration (s)",
                 I => I.PopBounceDuration,
                 "Duration in seconds of the pop scale animation (default 0.5s)."
-            ), 1, 0);
-
-            table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0f, 200f, 5f, 20f,
-                "Reference Distance (m)",
-                I => I.ReferenceDistance,
-                "Camera distance in meters where scale is considered 1.0x (default 20m)."
             ), 1, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.0f, 1.5f, 0.05f, 0.75f,
                 "Distance Scale Exponent",
                 I => I.DistanceScaleExponent,
-                "Distance scaling curve exponent. 1.0 = linear, 0 = fixed size regardless of distance (default 0.75)."
-            ), 2, 0);
-
-            table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.1f, 3.0f, 0.1f, 0.5f,
-                "Min Text Scale Clamp",
-                I => I.MinTextScale,
-                "Minimum clamped 3D text scale for extreme close-ups (default 0.5)."
-            ), 2, 1);
-
-            table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 5.0f, 80.0f, 1.0f, 40.0f,
-                "Max Text Scale Clamp",
-                I => I.MaxTextScale,
-                "Maximum clamped 3D text scale for distant targets (default 40.0)."
+                "Distance scaling curve exponent. 1.0 = linear, 0 = fixed size regardless of distance (default 0.75). When increased, the effect of distance on scale will be more pronounced."
             ), 3, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
@@ -666,7 +667,22 @@ namespace FloatingDamageNumbers
                 "Large Hit Threshold",
                 I => I.LargeHitThreshold,
                 "Damage threshold to trigger pop animation bounce (default 10,000)."
-            ), 3, 1);
+            ), 2, 1);
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+                _focus, 0f, 3.0f, 0.1f, 0.5f,
+                "Min Text Scale Clamp",
+                I => I.MinTextScale,
+                "Minimum clamped 3D text scale for extreme close-ups (default 0.5)."
+            ), 4, 0);
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+                _focus, 5.0f, 80.0f, 1.0f, 40.0f,
+                "Max Text Scale Clamp",
+                I => I.MaxTextScale,
+                "Maximum clamped 3D text scale for distant targets (default 40.0)."
+            ), 4, 1);
+            
         }
 
         private void SharedElevationAndStackingSection()

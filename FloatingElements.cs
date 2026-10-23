@@ -17,10 +17,9 @@ namespace FloatingDamageNumbers
         private static Font? _cachedFont;
         private static TMP_FontAsset? _cachedFontAsset;
 
-        private TextMeshPro? _mainText;
-        private MeshRenderer? _mainRenderer;
-        private SpriteRenderer? _damageSpriteRenderer;
-        private static Material? _sharedSpriteMaterial;
+        private TextMeshProUGUI? _mainText;
+        private RectTransform? _rectTransform;
+        private Image? _damageIconImage;
 
         public DamageType Type { get; private set; }
         public float PreviousDamage { get; private set; }
@@ -67,61 +66,51 @@ namespace FloatingDamageNumbers
         {
             if (_mainText != null) return;
 
+            // parent the element to the overlay canvas if it exists
+            if (FloatingDamageNumberRenderer.CanvasRect != null && transform.parent != FloatingDamageNumberRenderer.CanvasRect)
+            {
+                transform.SetParent(FloatingDamageNumberRenderer.CanvasRect, false);
+            }
+
+            // use TMPuGUI instead of TMPro due to overlay issues on graphic mods
             TMP_FontAsset? fontAsset = GetFontAsset();
 
-            _mainText = gameObject.AddComponent<TextMeshPro>();
-            _mainRenderer = gameObject.GetComponent<MeshRenderer>();
+            _mainText = gameObject.AddComponent<TextMeshProUGUI>();
+            _rectTransform = _mainText.rectTransform;
             _mainText.font = fontAsset;
+            _mainText.raycastTarget = false;
 
             if (fontAsset != null && fontAsset.material != null)
             {
                 _mainText.fontSharedMaterial = fontAsset.material;
             }
 
-            if (_mainRenderer != null)
-            {
-                _mainRenderer.sortingOrder = 30000;
-                _mainRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                _mainRenderer.receiveShadows = false;
-            }
-
             _mainText.alignment = TextAlignmentOptions.Midline;
             _mainText.textWrappingMode = TextWrappingModes.NoWrap;
             _mainText.overflowMode = TextOverflowModes.Overflow;
-            _mainText.fontSize = 16f;
+            _mainText.fontSize = 80f; // UI base font size in pixels
 
-            RectTransform rt = _mainText.rectTransform;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(10f, 2f);
+            _rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            _rectTransform.sizeDelta = new Vector2(200f, 50f);
 
             EnsureSpriteRenderer();
         }
+
         private void EnsureSpriteRenderer()
         {
-            if (_damageSpriteRenderer != null) return;
+            if (_damageIconImage != null) return;
 
             GameObject imageObj = new("DamageTypeSprite");
             imageObj.transform.SetParent(transform, false);
-            _damageSpriteRenderer = imageObj.AddComponent<SpriteRenderer>();
+            _damageIconImage = imageObj.AddComponent<Image>();
+            _damageIconImage.raycastTarget = false;
+            _damageIconImage.preserveAspect = true;
 
-            if (_sharedSpriteMaterial == null && _damageSpriteRenderer.sharedMaterial != null)
-            {
-                _sharedSpriteMaterial = new Material(_damageSpriteRenderer.sharedMaterial)
-                {
-                    renderQueue = 4501 // testing order layers
-                };
-                _sharedSpriteMaterial.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-                _sharedSpriteMaterial.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
-            }
-
-            if (_sharedSpriteMaterial != null)
-            {
-                _damageSpriteRenderer.sharedMaterial = _sharedSpriteMaterial;
-            }
-
-            _damageSpriteRenderer.sortingOrder = 30001;
-            imageObj.transform.localPosition = new Vector3(1f, 0f, -0.01f);
+            RectTransform iconRt = _damageIconImage.rectTransform;
+            iconRt.pivot = new Vector2(0.5f, 0.5f);
+            iconRt.sizeDelta = new Vector2(80f, 80f); // match font size!!!
         }
+
         public void Initialize(
             MainConstruct? construct,
             DamageType damageType,
@@ -332,38 +321,30 @@ namespace FloatingDamageNumbers
 
         private void RefreshTextMeshAndIcon()
         {
-            if (_mainText != null)
-            {
-                _mainText.ForceMeshUpdate();
-                if (_mainRenderer != null && _cachedFontAsset != null && _cachedFontAsset.material != null)
-                {
-                    _mainRenderer.sharedMaterial = _cachedFontAsset.material;
-                }
-            }
+            _mainText?.ForceMeshUpdate();
 
-            // image icon for damage type
             if (DamageNumberSettings.ShowAssociatedIcon)
             {
                 EnsureSpriteRenderer();
-                if (_damageSpriteRenderer != null)
+                if (_damageIconImage != null)
                 {
                     Sprite? icon = DamageIconCache.GetIcon(Type);
-                    _damageSpriteRenderer.sprite = icon;
-                    _damageSpriteRenderer.enabled = (icon != null);
+                    _damageIconImage.sprite = icon;
+                    _damageIconImage.enabled = (icon != null);
 
                     if (icon != null && _mainText != null)
                     {
-                        float rightEdge = _mainText.renderedWidth * 0.5f;
-                        float spacing = 0.25f; // gap between text and icon
-                        float spriteHalfWidth = (icon.rect.width / icon.pixelsPerUnit) * _damageSpriteRenderer.transform.localScale.x * 0.5f;
+                        float rightEdge = _mainText.preferredWidth * 0.5f;
+                        float spacing = 6f; // pixel gap between text and icon
+                        float iconHalfWidth = _damageIconImage.rectTransform.sizeDelta.x * 0.5f;
 
-                        _damageSpriteRenderer.transform.localPosition = new Vector3(rightEdge + spacing + spriteHalfWidth, 0f, -0.01f);
+                        _damageIconImage.rectTransform.anchoredPosition = new Vector2(rightEdge + spacing + iconHalfWidth, 0f);
                     }
                 }
             }
             else
             {
-                _damageSpriteRenderer?.enabled = false;
+                _damageIconImage?.enabled = false;
             }
 
             _textMeshDirty = false;
@@ -426,48 +407,55 @@ namespace FloatingDamageNumbers
             }
 
             // Camera and billboard alignment
-            if (cam != null)
+            if (cam != null && _rectTransform != null)
             {
-                transform.rotation = cam.transform.rotation;
-
                 float dist = Vector3.Distance(cam.transform.position, basePos);
-                float baseScale = DamageNumberSettings.BaseTextScale;
-
-                // Sub-linear distance factor (e.g. dist^0.50) prevents distant numbers from ballooning over targets, this is very prevalant on max engagement range.
                 float refDist = DamageNumberSettings.ReferenceDistance > 0f ? DamageNumberSettings.ReferenceDistance : 40f;
+
+                // Calculate 3D world-space elevation & vertical stacking first
                 float distFactor = Mathf.Pow(Mathf.Max(5f, dist) / refDist, DamageNumberSettings.DistanceScaleExponent);
-                float distanceScale = Mathf.Clamp((baseScale * refDist) * distFactor, DamageNumberSettings.MinTextScale, DamageNumberSettings.MaxTextScale);
-                float renderScale = distanceScale;
+                float worldDistanceScale = Mathf.Clamp((DamageNumberSettings.BaseTextScale * refDist) * distFactor, DamageNumberSettings.MinTextScale, DamageNumberSettings.MaxTextScale);
+                worldDistanceScale *= DamageNumberSettings.BaseTextScaleMultiplier;
 
-
-                // Pop bounce effect for new hits, this is a quick scale-up and then back down to normal size.
-                if (_popTimer > 0f)
-                {
-                    _popTimer -= deltaTime;
-                    float t = Mathf.Clamp01(_popTimer / DamageNumberSettings.PopBounceDuration);
-                    renderScale *= Mathf.Lerp(1.0f, DamageNumberSettings.PopBounceScale, t);
-                }
-
-                transform.localScale = Vector3.one * renderScale;
-
-                // Sub-linear distance elevation with ceiling clamp:
-                // Prevents distant numbers from rocketing into the sky while ensuring close-range targets float clearly above the hull.
                 float elevationFactor = Mathf.Pow(Mathf.Max(1f, dist), DamageNumberSettings.DistanceElevationExponent);
                 float distanceElevation = Mathf.Clamp(
                     DamageNumberSettings.DistanceElevationFactor * elevationFactor,
                     DamageNumberSettings.MinDistanceElevation,
                     DamageNumberSettings.MaxDistanceElevation);
 
-                float stackSpacing = StackIndex * (distanceScale * DamageNumberSettings.StackSpacingMultiplier);
-                Vector3 upVector = cam.transform.up;
+                float stackSpacing = StackIndex * (worldDistanceScale * DamageNumberSettings.StackSpacingMultiplier);
+                Vector3 worldPos = basePos + DamageNumberSettings.BaseSpawnOffset + (cam.transform.up * (distanceElevation + stackSpacing));
 
-                transform.position = basePos + DamageNumberSettings.BaseSpawnOffset
-                                     + (upVector * (distanceElevation + stackSpacing));
-            }
-            else
-            {
-                float stackSpacing = StackIndex * 1.5f;
-                transform.position = basePos + DamageNumberSettings.BaseSpawnOffset + new Vector3(0f, stackSpacing, 0f);
+                // Project 3D world position to 2D Screen Space
+                Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
+
+                // Correct position so target isn't behind camera
+                if (screenPos.z <= 0f)
+                {
+                    _mainText?.enabled = false;
+                    _damageIconImage?.enabled = false;
+                    return;
+                }
+
+                if (_mainText != null && !_mainText.enabled) _mainText.enabled = true;
+                if (_damageIconImage != null && DamageNumberSettings.ShowAssociatedIcon && _damageIconImage.sprite != null)
+                    _damageIconImage.enabled = true;
+
+                _rectTransform.position = new Vector3(screenPos.x, screenPos.y, 0f);
+
+                // Screen-space scale
+                // In 3D, angular size is proportional to (worldScale / dist).
+                float uiScale = (worldDistanceScale / Mathf.Max(5f, dist)) * (refDist * 1.5f);
+                uiScale = Mathf.Clamp(uiScale, 0.4f, 2.5f);
+
+                if (_popTimer > 0f)
+                {
+                    _popTimer -= deltaTime;
+                    float t = Mathf.Clamp01(_popTimer / DamageNumberSettings.PopBounceDuration);
+                    uiScale *= Mathf.Lerp(1.0f, DamageNumberSettings.PopBounceScale, t);
+                }
+
+                _rectTransform.localScale = Vector3.one * uiScale;
             }
 
             // Alpha fade out
@@ -485,7 +473,7 @@ namespace FloatingDamageNumbers
                 _mainText.color = c;
             }
 
-            _damageSpriteRenderer?.color = new Color(1f, 1f, 1f, alpha);
+            _damageIconImage?.color = new Color(1f, 1f, 1f, alpha);
         }
 
         private static int _cameraFrame = -1;
