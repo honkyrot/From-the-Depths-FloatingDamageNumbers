@@ -58,7 +58,7 @@ namespace FloatingDamageNumbers
             public float DistanceElevationFactor { get; set; } = 1.25f;
             public float DistanceElevationExponent { get; set; } = 0.6f;
             public float MaxDistanceElevation { get; set; } = 140f;
-            public float StackSpacingMultiplier { get; set; } = 1.35f;
+            public float StackSpacingMultiplier { get; set; } = 1.1f;
             public float StackProximityDistance { get; set; } = 15f;
 
             // Shared - Motion & Lifetime
@@ -715,10 +715,10 @@ namespace FloatingDamageNumbers
             ), 1, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.5f, 3.0f, 0.05f, 1.35f,
+                _focus, 0.5f, 3.0f, 0.05f, 1.1f,
                 "Stack Spacing Multiplier",
                 I => I.StackSpacingMultiplier,
-                "Vertical spacing between stacked damage numbers (default 1.35)."
+                "Vertical spacing between stacked damage numbers (default 1.1)."
             ), 1, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(

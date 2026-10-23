@@ -88,6 +88,8 @@ namespace FloatingDamageNumbers
                 _mainText.fontSharedMaterial = fontAsset.material;
             }
 
+            _mainText.UpdateMeshPadding();
+
             _mainText.alignment = TextAlignmentOptions.Midline;
             _mainText.textWrappingMode = TextWrappingModes.NoWrap;
             _mainText.overflowMode = TextOverflowModes.Overflow;
@@ -181,10 +183,17 @@ namespace FloatingDamageNumbers
 
             _popTimer = isLargeHit ? DamageNumberSettings.PopBounceDuration : 0f;
 
-            UpdateTextDisplay(true);
-
             transform.position = worldHitPosition + DamageNumberSettings.BaseSpawnOffset;
             gameObject.SetActive(true);
+
+            UpdateTextDisplay(true);
+            
+            if (_mainText != null && _cachedFontAsset != null && _cachedFontAsset.material != null)
+            {
+                _mainText.fontSharedMaterial = _cachedFontAsset.material;
+                _mainText.UpdateMeshPadding();
+                _mainText.ForceMeshUpdate();
+            }
         }
 
         /// <summary>
@@ -421,7 +430,7 @@ namespace FloatingDamageNumbers
                 float dist = Vector3.Distance(cam.transform.position, basePos);
                 float refDist = DamageNumberSettings.ReferenceDistance > 0f ? DamageNumberSettings.ReferenceDistance : 40f;
 
-                // Calculate 3D world-space elevation & vertical stacking first
+                // Calculate 3D world-space elevation first
                 float distFactor = Mathf.Pow(Mathf.Max(5f, dist) / refDist, DamageNumberSettings.DistanceScaleExponent);
                 float worldDistanceScale = Mathf.Clamp((DamageNumberSettings.BaseTextScale * refDist) * distFactor, DamageNumberSettings.MinTextScale, DamageNumberSettings.MaxTextScale);
                 worldDistanceScale *= DamageNumberSettings.BaseTextScaleMultiplier;
@@ -432,8 +441,7 @@ namespace FloatingDamageNumbers
                     DamageNumberSettings.MinDistanceElevation,
                     DamageNumberSettings.MaxDistanceElevation);
 
-                float stackSpacing = StackIndex * (worldDistanceScale * DamageNumberSettings.StackSpacingMultiplier);
-                Vector3 worldPos = basePos + DamageNumberSettings.BaseSpawnOffset + (cam.transform.up * (distanceElevation + stackSpacing));
+                Vector3 worldPos = basePos + DamageNumberSettings.BaseSpawnOffset + (cam.transform.up * distanceElevation);
 
                 // Project 3D world position to 2D Screen Space
                 Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
@@ -450,14 +458,12 @@ namespace FloatingDamageNumbers
                 if (_damageIconImage != null && DamageNumberSettings.ShowAssociatedIcon && _damageIconImage.sprite != null)
                     _damageIconImage.enabled = true;
 
-                _rectTransform.position = new Vector3(screenPos.x, screenPos.y, 0f);
-                _rectTransform.anchoredPosition = new Vector2(screenPos.x, screenPos.y);
-
                 // Screen-space scale
                 // In 3D, angular size is proportional to (worldScale / dist).
-                float uiScale = (worldDistanceScale / Mathf.Max(5f, dist)) * (refDist * 1.5f);
-                uiScale = Mathf.Clamp(uiScale, 0.4f, 2.5f);
+                float baseUiScale = (worldDistanceScale / Mathf.Max(5f, dist)) * (refDist * 1.5f);
+                baseUiScale = Mathf.Clamp(baseUiScale, 0.4f, 2.5f);
 
+                float uiScale = baseUiScale;
                 if (_popTimer > 0f)
                 {
                     _popTimer -= deltaTime;
@@ -470,6 +476,14 @@ namespace FloatingDamageNumbers
                     _lastScale = uiScale;
                     _rectTransform.localScale = new Vector3(uiScale, uiScale, 1f);
                 }
+
+                // Screen-space vertical stacking for UI Canvas elements
+                float baseFontSize = _mainText != null ? _mainText.fontSize : 80f;
+                float stackSpacing = StackIndex * (baseFontSize * baseUiScale * DamageNumberSettings.StackSpacingMultiplier);
+                screenPos.y += stackSpacing;
+
+                _rectTransform.position = new Vector3(screenPos.x, screenPos.y, 0f);
+                _rectTransform.anchoredPosition = new Vector2(screenPos.x, screenPos.y);
             }
 
             // Alpha fade out
@@ -581,7 +595,7 @@ namespace FloatingDamageNumbers
         {
             if (_cachedFontAsset != null) return _cachedFontAsset;
 
-            // attempt cloning LiberationSans SDF font asset from TMP resources, which is the default TMP font in FTD
+            // Ensure we have a TMP_FontAsset for LiberationSans SDF, which is the default font used by TextMeshPro in FTD.
             foreach (var tmpFont in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
             {
                 if (tmpFont != null && tmpFont.name.Contains("LiberationSans SDF") && !tmpFont.name.Contains("Fallback"))
@@ -595,7 +609,6 @@ namespace FloatingDamageNumbers
                 }
             }
 
-            // Fallback to dynamic OS/builtin font
             if (_cachedFontAsset == null)
             {
                 Font font = GetFont();
@@ -605,12 +618,13 @@ namespace FloatingDamageNumbers
 
             if (_cachedFontAsset != null && _cachedFontAsset.material != null)
             {
+                ShaderUtilities.GetShaderPropertyIDs(); // Ensure TMP shader property IDs are initialized
                 Material mat = _cachedFontAsset.material;
 
-                // Swap to the built-in TMP Overlay shader variant
-                Shader? overlayShader = Shader.Find("TextMeshPro/Mobile/Distance Field - Overlay")
-                                     ?? Shader.Find("TextMeshPro/Distance Field Overlay")
-                                     ?? Shader.Find("TextMeshPro/Distance Field-Overlay");
+                // Prefer full Distance Field Overlay first for reliable OUTLINE_ON support, fallback to Mobile
+                Shader? overlayShader = Shader.Find("TextMeshPro/Distance Field Overlay")
+                                     ?? Shader.Find("TextMeshPro/Distance Field-Overlay")
+                                     ?? Shader.Find("TextMeshPro/Mobile/Distance Field - Overlay");
 
                 if (overlayShader != null)
                 {
@@ -618,9 +632,10 @@ namespace FloatingDamageNumbers
                 }
 
                 mat.EnableKeyword("OUTLINE_ON");
-                mat.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.05f);
+                mat.SetColor(ShaderUtilities.ID_OutlineColor, new Color(0f, 0f, 0f, 1f));
+                mat.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.10f); // outline thickness here
+                mat.SetFloat(ShaderUtilities.ID_FaceDilate, 0.1f);    // prevents outline from eating into text
 
-                // 4500 renders after all GrabPasses, volumetric smoke, and transparent effects
                 mat.renderQueue = 4500;
                 mat.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
                 mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);

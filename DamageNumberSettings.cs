@@ -112,7 +112,7 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// Vertical spacing multiplier (relative to text height) when multiple damage types stack (e.g. AP+Chemical).
         /// </summary>
-        public static float StackSpacingMultiplier = 1.35f;
+        public static float StackSpacingMultiplier = 1.1f;
 
         /// <summary>
         /// Distance threshold in meters to consider numbers co-located and stack them vertically.
