@@ -564,6 +564,7 @@ namespace FloatingDamageNumbers
         {
             SharedDisplaySection();
             SharedScaleSection();
+            SharedDistanceSection();
             SharedElevationAndStackingSection();
             SharedMovementAndLifetimeSection();
         }
@@ -614,11 +615,11 @@ namespace FloatingDamageNumbers
 
         private void SharedScaleSection()
         {
-            ScreenSegmentTable table = CreateTableSegment(2, 5);
+            ScreenSegmentTable table = CreateTableSegment(2, 2);
             table.SqueezeTable = false;
             table.SpaceBelow = Spacing;
             table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
-            table.NameWhereApplicable = "Scale & Distance Dynamics";
+            table.NameWhereApplicable = "Scaling";
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.001f, 0.1f, 0.001f, 0.03f,
@@ -629,9 +630,33 @@ namespace FloatingDamageNumbers
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.0f, 10f, 0.01f, 1.0f,
-                "Text Scale Multiplier",
+                "UI Scale Multiplier",
                 I => I.BaseTextScaleMultiplier,
-                "Multiplier for the base text scale (default 1.0)."
+                "Multiplier for the base UI scale (default 1.0)."
+            ), 0, 1);
+
+        }
+
+        private void SharedDistanceSection()
+        {
+            ScreenSegmentTable table = CreateTableSegment(2, 4);
+            table.SqueezeTable = false;
+            table.SpaceBelow = Spacing;
+            table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
+            table.NameWhereApplicable = "Scaling & Distance Dynamics (Extra)";
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+               _focus, 1f, 300f, 1f, 20f,
+               "Reference Distance (m)",
+               I => I.ReferenceDistance,
+               "Camera distance in meters where scale is considered 1.0x (default 20m). When increased, closer objects will appear larger, and farther objects will appear smaller."
+           ), 0, 0);
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+                _focus, 0.0f, 1.5f, 0.05f, 0.75f,
+                "Distance Scale Exponent",
+                I => I.DistanceScaleExponent,
+                "Distance scaling curve exponent. 1.0 = linear, 0 = fixed size regardless of distance (default 0.75). When increased, the effect of distance on scale will be more pronounced."
             ), 1, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
@@ -642,26 +667,12 @@ namespace FloatingDamageNumbers
             ), 0, 1);
 
             table.AddInterpretter(UIHelper.FloatSlider(
-               _focus, 1f, 300f, 1f, 20f,
-               "Reference Distance (m)",
-               I => I.ReferenceDistance,
-               "Camera distance in meters where scale is considered 1.0x (default 20m). When increased, closer objects will appear larger, and farther objects will appear smaller."
-           ), 2, 0);
-
-            table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.1f, 1.5f, 0.05f, 0.5f,
                 "Pop Bounce Duration (s)",
                 I => I.PopBounceDuration,
                 "Duration in seconds of the pop scale animation (default 0.5s)."
             ), 1, 1);
-
-            table.AddInterpretter(UIHelper.FloatSlider(
-                _focus, 0.0f, 1.5f, 0.05f, 0.75f,
-                "Distance Scale Exponent",
-                I => I.DistanceScaleExponent,
-                "Distance scaling curve exponent. 1.0 = linear, 0 = fixed size regardless of distance (default 0.75). When increased, the effect of distance on scale will be more pronounced."
-            ), 3, 0);
-
+            
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 500f, 50000f, 500f, 10000f,
                 "Large Hit Threshold",
@@ -674,14 +685,14 @@ namespace FloatingDamageNumbers
                 "Min Text Scale Clamp",
                 I => I.MinTextScale,
                 "Minimum clamped 3D text scale for extreme close-ups (default 0.5)."
-            ), 4, 0);
+            ), 2, 0);
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 5.0f, 80.0f, 1.0f, 40.0f,
                 "Max Text Scale Clamp",
                 I => I.MaxTextScale,
                 "Maximum clamped 3D text scale for distant targets (default 40.0)."
-            ), 4, 1);
+            ), 3, 1);
             
         }
 
