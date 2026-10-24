@@ -265,18 +265,43 @@ namespace FloatingDamageNumbers
             _popTimer = DamageNumberSettings.PopBounceDuration;
         }
 
+        private string LargeNumberAbbrevation(float _value)
+        {
+            if (DamageNumberSettings.FormatLargeNumbers)
+            {
+                int mag = (int)(Math.Floor(Math.Log10(_value)) / 3); 
+                double divisor = Math.Pow(10, mag*3);
+
+                double shortNumber = _value / divisor;
+                string suffix = mag switch
+                {
+                    0 => "",
+                    1 => "K",
+                    2 => "M",
+                    3 => "B",  // past this is not realistic to see in FTD anyway
+                    4 => "T",
+                    _ => "",
+                };
+
+                // if in millions, show two decimal places, otherwise show one decimal place
+                if (mag >= 2)
+                {
+                    return shortNumber.ToString("0.##") + suffix;
+                }
+                else
+                {
+                    return shortNumber.ToString("0.#") + suffix;
+                }
+                
+            }
+            return _value.ToString("N0");
+        }
+
         private void UpdateTextDisplay(bool rebuildMesh)
         {
             // standard mode
             string damageText;
-            if (DamageNumberSettings.FormatAbbreviatedThousands && TotalDamage >= 1000f)
-            {
-                damageText = (TotalDamage / 1000f).ToString("0.#") + "k";
-            }
-            else
-            {
-                damageText = Mathf.RoundToInt(TotalDamage).ToString("N0");
-            }
+            damageText = LargeNumberAbbrevation(TotalDamage);
 
             if (DamageNumberSettings.ShowDamageTypeTag)
             {
@@ -306,14 +331,7 @@ namespace FloatingDamageNumbers
         private void UpdateTextDisplayasDPS(bool rebuildMesh)
         {
             string damageText;
-            if (DamageNumberSettings.FormatAbbreviatedThousands && CurrentDPS >= 1000f)
-            {
-                damageText = (CurrentDPS / 1000f).ToString("0.#") + "k DPS";
-            }
-            else
-            {
-                damageText = Mathf.RoundToInt(CurrentDPS).ToString("N0") + " DPS";
-            }
+            damageText = LargeNumberAbbrevation(CurrentDPS) + " DPS";
 
             if (DamageNumberSettings.ShowDamageTypeTag)
             {

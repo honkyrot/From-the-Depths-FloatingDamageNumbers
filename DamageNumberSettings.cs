@@ -101,7 +101,7 @@ namespace FloatingDamageNumbers
         /// </summary>
         public static float MinDistanceElevation = 0f;
 
-        public static bool FormatAbbreviatedThousands = false;
+        public static bool FormatLargeNumbers = false;
         public static bool ShowDamageTypeTag = false;
         public static bool ShowAssociatedIcon = true; // show damage type icon
 

@@ -13,6 +13,7 @@ namespace FloatingDamageNumbers
         public static RectTransform? CanvasRect { get; private set; }
 
         public static void EnsureInstance()
+        // Ensures that the singleton instance of FloatingDamageNumberRenderer exists.
         {
             if (_instance == null)
             {

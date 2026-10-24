@@ -229,7 +229,13 @@ namespace FloatingDamageNumbers
                 _shipQueues[constructId] = queue;
             }
 
-            bool isExplosive = bucket.Type == DamageType.Explosive;
+            // if false, all damage types will merge into a single number per ship
+            if (!DamageNumberSettings.AggregateOnlySameDamageType)
+            {
+                bucket.Type = DamageType.None;
+            }
+
+                bool isExplosive = bucket.Type == DamageType.Explosive;
             bool isFire = bucket.Type == DamageType.Fire;
             bool isLaser = bucket.Type == DamageType.Laser;
             bool isRapid = isExplosive || isFire || isLaser;
@@ -246,7 +252,7 @@ namespace FloatingDamageNumbers
                     if (existing == null || !existing.gameObject.activeSelf) continue;
 
                     // Match damage type: Kinetic only merges with Kinetic, Explosive with Explosive
-                    if (DamageNumberSettings.AggregateOnlySameDamageType && existing.Type != bucket.Type)
+                    if (existing.Type != bucket.Type)
                     {
                         continue;
                     }

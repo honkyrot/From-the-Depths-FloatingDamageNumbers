@@ -40,7 +40,7 @@ namespace FloatingDamageNumbers
             // Shared - Formatting & Icons
             public bool ShowAssociatedIcon { get; set; } = true;
             public bool ShowDamageTypeTag { get; set; } = false;
-            public bool FormatAbbreviatedThousands { get; set; } = false;
+            public bool FormatLargeNumbers { get; set; } = false;
             public bool AggregateOnlySameDamageType { get; set; } = true;
 
             // Shared - Text Scale & Distance
@@ -111,7 +111,7 @@ namespace FloatingDamageNumbers
 
             DamageNumberSettings.ShowAssociatedIcon = ShowAssociatedIcon;
             DamageNumberSettings.ShowDamageTypeTag = ShowDamageTypeTag;
-            DamageNumberSettings.FormatAbbreviatedThousands = FormatAbbreviatedThousands;
+            DamageNumberSettings.FormatLargeNumbers = FormatLargeNumbers;
             DamageNumberSettings.AggregateOnlySameDamageType = AggregateOnlySameDamageType;
 
             DamageNumberSettings.BaseTextScale = BaseTextScale;
@@ -183,10 +183,10 @@ namespace FloatingDamageNumbers
             set { Internal.ShowDamageTypeTag = value; DamageNumberSettings.ShowDamageTypeTag = value; }
         }
 
-        public bool FormatAbbreviatedThousands
+        public bool FormatLargeNumbers
         {
-            get => Internal.FormatAbbreviatedThousands;
-            set { Internal.FormatAbbreviatedThousands = value; DamageNumberSettings.FormatAbbreviatedThousands = value; }
+            get => Internal.FormatLargeNumbers;
+            set { Internal.FormatLargeNumbers = value; DamageNumberSettings.FormatLargeNumbers = value; }
         }
 
         public bool AggregateOnlySameDamageType
@@ -594,14 +594,14 @@ namespace FloatingDamageNumbers
             table.AddInterpretter(UIHelper.Bool(
                 _focus,
                 "Abbreviate Large Numbers",
-                "Format thousands with 'k' abbreviation (e.g. 12.5k, 512.5k).",
-                I => I.FormatAbbreviatedThousands
+                "Format large numbers down, ex 1.5K, 1.5M",
+                I => I.FormatLargeNumbers
             ), 1, 0);
 
             table.AddInterpretter(UIHelper.Bool(
                 _focus,
-                "Aggregate Same Damage Type Only",
-                "Only merge numbers of identical damage type together into the same stack. (default: true)",
+                "Separate Damage Types",
+                "If true, show all 8 damage types separately, else they're one combined number.",
                 I => I.AggregateOnlySameDamageType
             ), 1, 1);
 

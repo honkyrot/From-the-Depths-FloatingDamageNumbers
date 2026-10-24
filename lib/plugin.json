@@ -1,0 +1,8 @@
+{
+  "name": "FloatingDamageNumbers",
+  "version": "1.0.3",
+  "gameversion": "4.3.4.1",
+  "depends": [],
+  "conflicts": [],
+  "filename": "0Harmony.dll,FloatingDamageNumbers.dll"
+}
