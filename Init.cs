@@ -11,7 +11,7 @@ namespace FloatingDamageNumbers
     {
         public string name => "FloatingDamageNumbers";
 
-        public Version version => new(1, 0, 3);
+        public Version version => new(1, 0, 4);
 
         public void OnLoad()
         {
