@@ -9,6 +9,7 @@ namespace FloatingDamageNumbers
     /// <summary>
     /// Harmony patch intercepting Block.ApplyDamage to record damage dealt, damage type,
     /// and spatial hit coordinates on the construct.
+    /// THE patch here, if the game breaks, check this first. then move onto the UI patch.
     /// </summary>
     [HarmonyPatch(typeof(Block), "ApplyDamage",
     [
@@ -30,6 +31,10 @@ namespace FloatingDamageNumbers
         {
             try
             {
+                // In multiplayer clients, Block.ApplyDamage aborts on line 1 and does not decrement health.
+                // Clients receive authoritative damage via MultiplayerHandler instead.
+                if (BrilliantSkies.Core.Net.IsClient) return;
+
                 if (!DamageNumberSettings.EnableDamageNumbers) return;
                 if (__instance == null || DD == null) return;
 

@@ -46,7 +46,7 @@ namespace FloatingDamageNumbers
             // Shared - Text Scale & Distance
 
             public float BaseTextScale { get; set; } = 0.03f;
-            public float BaseTextScaleMultiplier { get; set; } = 0.03f;
+            public float BaseTextScaleMultiplier { get; set; } = 1f;
             public float PopBounceScale { get; set; } = 1.25f;
             public float PopBounceDuration { get; set; } = 0.5f;
             public float ReferenceDistance { get; set; } = 20f;
@@ -79,6 +79,7 @@ namespace FloatingDamageNumbers
             public float AccumulationWindowSeconds { get; set; } = 1.0f;
             public float MaxAccumulationDistance { get; set; } = 25.0f;
             public bool HoverOverLastPositionHit { get; set; } = true;
+            public float NetworkTickrate { get; set; } = 20f;
         }
 
         public override ModuleType ModuleType => ModuleType.Options;
@@ -144,6 +145,7 @@ namespace FloatingDamageNumbers
             DamageNumberSettings.AccumulationWindowSeconds = AccumulationWindowSeconds;
             DamageNumberSettings.MaxAccumulationDistance = MaxAccumulationDistance;
             DamageNumberSettings.HoverOverLastPositionHit = HoverOverLastPositionHit;
+            DamageNumberSettings.NetworkTickrate = NetworkTickrate;
         }
 
         #region Properties
@@ -353,6 +355,12 @@ namespace FloatingDamageNumbers
         {
             get => Internal.HoverOverLastPositionHit;
             set { Internal.HoverOverLastPositionHit = value; DamageNumberSettings.HoverOverLastPositionHit = value; }
+        }
+
+        public float NetworkTickrate
+        {
+            get => Internal.NetworkTickrate;
+            set { Internal.NetworkTickrate = value; DamageNumberSettings.NetworkTickrate = value; }
         }
 
         #endregion
@@ -567,6 +575,7 @@ namespace FloatingDamageNumbers
             SharedDistanceSection();
             SharedElevationAndStackingSection();
             SharedMovementAndLifetimeSection();
+            MultiplayerSection();
         }
 
         private void SharedDisplaySection()
@@ -777,6 +786,22 @@ namespace FloatingDamageNumbers
             ), 1, 0);
             table.AddInterpretter(StringDisplay.Quick(""), 1, 1);
         }
+        private void MultiplayerSection()
+        {
+            ScreenSegmentTable table = CreateTableSegment(2, 1);
+            table.SqueezeTable = false;
+            table.SpaceBelow = Spacing;
+            table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
+            table.NameWhereApplicable = "Multiplayer Synchronization";
+
+            table.AddInterpretter(UIHelper.FloatSlider(
+                _focus, 10f, 60f, 1f, 20f,
+                "Network Tickrate (Hz)",
+                I => I.NetworkTickrate,
+                "Network broadcast tickrate for multiplayer host (default: 20 Hz)."
+            ), 0, 0);
+        }
+
         private void SimpleSettingsSection()
         {
             ScreenSegmentTable table = CreateTableSegment(2, 2);

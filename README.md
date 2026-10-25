@@ -36,6 +36,7 @@ If performance or readability is a problem:
 4. Disable damage numbers with the toggle during very large battles.
 
 This mod has not been tested on Linux and Mac builds.
+This mod does not work in Multiplayer.
 
 ## Personal note
 

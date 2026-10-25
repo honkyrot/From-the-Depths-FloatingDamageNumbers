@@ -8,7 +8,7 @@ using UnityEngine;
 namespace FloatingDamageNumbers
 {
     /// <summary>
-    /// High-performance thread-safe manager that coalesces high-frequency block damage events
+    /// thread safe manager that coalesces high-frequency block damage events
     /// (e.g. 5,000-block turret explosions) into single unified damage numbers per construct/type,
     /// </summary>
     public static class DamageQueueManager
@@ -94,6 +94,18 @@ namespace FloatingDamageNumbers
                     _drainedBuckets.Add(kvp.Value);
                 }
                 _pendingBuckets.Clear();
+            }
+
+            // If hosting a multiplayer session, enqueue coalesced damage for tickrate broadcast
+            if (BrilliantSkies.Core.Net.IsServer)
+            {
+                for (int i = 0; i < _drainedBuckets.Count; i++)
+                {
+                    DamageBucket bucket = _drainedBuckets[i];
+                    MultiplayerHandler.QueueDamageForBroadcast(bucket.Construct, bucket.Type, bucket.TotalDamage, bucket.Position);
+                }
+
+                MultiplayerHandler.Tick(currentTime);
             }
 
             // Process each coalesced damage bucket

@@ -158,6 +158,14 @@ namespace FloatingDamageNumbers
 
         #endregion
 
+        #region Multiplayer Settings
+        /// <summary>
+        /// Network broadcast tickrate in Hz (updates per second) when hosting multiplayer matches.
+        /// Defaults to 20 Hz.
+        /// </summary>
+        public static float NetworkTickrate = 20f;
+        #endregion
+
         #region Simple Settings
         // for the simple setting of floating damage numbers, 8 stacking damage numbers for each type above the COM of a ship instead of independent positions for each hit. This is less visually accurate but much simpler and less cluttered.
 

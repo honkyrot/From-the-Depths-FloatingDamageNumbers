@@ -65,6 +65,9 @@ namespace FloatingDamageNumbers
         }
 
 
+        /// <summary>
+        /// Initializes and configures required UI components for displaying floating damage numbers if they are not already present.
+        /// </summary>
         private void EnsureComponents()
         {
             if (_mainText != null) return;
@@ -103,6 +106,9 @@ namespace FloatingDamageNumbers
             EnsureSpriteRenderer();
         }
 
+        /// <summary>
+        /// Initializes the sprite renderer for the damage icon if it does not already exist.
+        /// </summary>
         private void EnsureSpriteRenderer()
         {
             if (_damageIconImage != null) return;
@@ -118,6 +124,9 @@ namespace FloatingDamageNumbers
             iconRt.sizeDelta = new Vector2(80f, 80f); // match font size!!!
         }
 
+        /// <summary>
+        /// Initializes the damage number display with the specified parameters.
+        /// </summary>
         public void Initialize(
             MainConstruct? construct,
             DamageType damageType,
@@ -253,6 +262,9 @@ namespace FloatingDamageNumbers
             }
         }
 
+        /// <summary>
+        /// Marks the damage number as a large hit, updates its lifetime, and refreshes the display accordingly.
+        /// </summary>
         public void MarkLargeHit()
         {
             if (!IsLargeHit)
@@ -265,6 +277,14 @@ namespace FloatingDamageNumbers
             _popTimer = DamageNumberSettings.PopBounceDuration;
         }
 
+        /// <summary>
+        /// on huge hit (later)
+        /// </summary>
+
+
+        /// <summary>
+        /// abbreviates large numbers into a more readable format (e.g., 1.5K, 2.35M, 4.72B) based on the magnitude of the value.
+        /// </summary>
         private string LargeNumberAbbrevation(float _value)
         {
             if (DamageNumberSettings.FormatLargeNumbers)
@@ -297,6 +317,9 @@ namespace FloatingDamageNumbers
             return _value.ToString("N0");
         }
 
+        /// <summary>
+        /// Updates the damage text display and optionally rebuilds the text mesh.
+        /// </summary>true to rebuild the text mesh and icon; otherwise, false.
         private void UpdateTextDisplay(bool rebuildMesh)
         {
             // standard mode
@@ -328,6 +351,9 @@ namespace FloatingDamageNumbers
             }
         }
 
+        /// <summary>
+        /// updates text displayers per call
+        /// </summary>
         private void UpdateTextDisplayasDPS(bool rebuildMesh)
         {
             string damageText;
@@ -356,6 +382,9 @@ namespace FloatingDamageNumbers
             }
         }
 
+        /// <summary>
+        /// reupdate renderer and positionings
+        /// </summary>
         private void RefreshTextMeshAndIcon()
         {
             if (DamageNumberSettings.ShowAssociatedIcon)
@@ -386,6 +415,9 @@ namespace FloatingDamageNumbers
             _textMeshDirty = false;
         }
 
+        /// <summary>
+        /// force update of the damage number display, including position, scale, and alpha, based on the current time and camera view.
+        /// </summary>
         public void ManualUpdate(float currentTime, float deltaTime, Camera? cam)
         {
             float age = Mathf.Max(0f, currentTime - CreationTime);
@@ -528,6 +560,9 @@ namespace FloatingDamageNumbers
         private static int _cameraFrame = -1;
         private static Camera? _cachedCamera;
 
+        /// <summary>
+        /// unity get active camera
+        /// </summary>
         public static Camera? ResolveActiveCamera()
         {
             int frame = Time.frameCount;
