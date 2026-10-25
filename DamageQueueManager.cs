@@ -152,6 +152,12 @@ namespace FloatingDamageNumbers
                     FloatingElements current = queue[i];
                     if (current == null || !current.gameObject.activeSelf) continue;
 
+                    if (!DamageNumberSettings.EnableDetailedSettings)
+                    {
+                        current.StackIndex = i;
+                        continue;
+                    }
+
                     int stack = 0;
                     for (int j = 0; j < i; j++)
                     {

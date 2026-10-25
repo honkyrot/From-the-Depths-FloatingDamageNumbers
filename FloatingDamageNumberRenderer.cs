@@ -27,7 +27,7 @@ namespace FloatingDamageNumbers
 
                     OverlayCanvas = go.AddComponent<Canvas>();
                     OverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    OverlayCanvas.sortingOrder = 20002;
+                    OverlayCanvas.sortingOrder = 0;
 
                     CanvasRect = go.GetComponent<RectTransform>();
 

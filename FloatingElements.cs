@@ -465,8 +465,16 @@ namespace FloatingDamageNumbers
             {
                 try
                 {
-                    basePos = Construct.SafeLocalToGlobal(LocalHitPosition);
-                    LastWorldHitPosition = basePos;
+                    if (!DamageNumberSettings.EnableDetailedSettings)
+                    {
+                        basePos = Construct.CentreOfMass;
+                        LastWorldHitPosition = basePos;
+                    }
+                    else
+                    {
+                        basePos = Construct.SafeLocalToGlobal(LocalHitPosition);
+                        LastWorldHitPosition = basePos;
+                    }
                 }
                 catch
                 {

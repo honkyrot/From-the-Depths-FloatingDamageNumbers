@@ -487,6 +487,7 @@ namespace FloatingDamageNumbers
                 DetailedSettingsSection();
             }
             SharedSettingsSection();
+            PerformanceSection();
         }
 
         private void MasterSection()
@@ -835,20 +836,6 @@ namespace FloatingDamageNumbers
                 "Minimum damage required to spawn a number (filters out machine gun / fragment noise, default 5)."
             ), 0, 0);
 
-            table.AddInterpretter(UIHelper.IntSlider(
-                _focus, 1, 256, 1, 8,
-                "Max Numbers Per Ship",
-                I => I.MaxNumbersPerShip,
-                "Maximum simultaneous damage numbers allowed per individual ship (default 8)."
-            ), 0, 1);
-
-            table.AddInterpretter(UIHelper.IntSlider(
-                _focus, 10, 1024, 2, 64,
-                "Max World Pool Size",
-                I => I.MaxWorldPoolSize,
-                "Hard cap on total 3D text objects rendered across the battlefield (default 64)."
-            ), 1, 0);
-
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus, 0.1f, 5.0f, 0.1f, 1.0f,
                 "Accumulation Window (s)",
@@ -875,6 +862,29 @@ namespace FloatingDamageNumbers
                 4, 0);
 
             table.AddInterpretter(StringDisplay.Quick(""), 4, 1);
+        }
+
+        private void PerformanceSection()
+        {
+            ScreenSegmentTable table = CreateTableSegment(2, 1);
+            table.SqueezeTable = false;
+            table.SpaceBelow = Spacing;
+            table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
+            table.NameWhereApplicable = "Performance";
+
+            table.AddInterpretter(UIHelper.IntSlider(
+               _focus, 8, 256, 1, 8,
+               "Max Numbers Per Ship",
+               I => I.MaxNumbersPerShip,
+               "Maximum simultaneous damage numbers allowed per individual ship (default 8)."
+           ), 0, 0);
+
+            table.AddInterpretter(UIHelper.IntSlider(
+                _focus, 64, 1024, 2, 64,
+                "Maximum Floating Numbers",
+                I => I.MaxWorldPoolSize,
+                "Hard cap on total 3D text objects rendered across the battlefield (default 64)."
+            ), 0, 1);
         }
     }
 
