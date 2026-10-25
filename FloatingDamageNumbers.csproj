@@ -19,9 +19,6 @@
     <None Remove="decompiled code\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="THIRD PARTY LICENSE.md" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="bin\Release\netstandard2.1\FloatingDamageNumbers.dll" />

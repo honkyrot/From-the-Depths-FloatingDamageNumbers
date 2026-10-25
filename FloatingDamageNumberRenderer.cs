@@ -1,5 +1,7 @@
 using System;
 using BrilliantSkies.Core.Logger;
+using BrilliantSkies.FromTheDepths.Planets.Map;
+using HarmonyLib;
 using UnityEngine;
 
 namespace FloatingDamageNumbers
@@ -38,6 +40,38 @@ namespace FloatingDamageNumbers
                 }
             }
         }
+
+        public void OverlayVisible(bool visible)
+        {
+            OverlayCanvas?.enabled = visible;
+        }
+
+        [HarmonyPatch(typeof(MapCameraControl), "Activate",
+        [
+
+        ])]
+        public static class EnterMapPatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                FloatingDamageNumberRenderer.Instance?.OverlayVisible(false);
+            }
+        }
+
+        [HarmonyPatch(typeof(MapCameraControl), "Deactivate",
+        [
+        ])]
+        public static class ExitMapPatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                FloatingDamageNumberRenderer.Instance?.OverlayVisible(true);
+            }
+        }
+
+        // patch to hide the overlay when the world map is open, and show it again when closed
 
         private void Awake()
         {

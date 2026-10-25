@@ -5,5 +5,5 @@
     "Guid": "01d6d0da-2db7-4126-b54b-cd4add68276b",
     "Name": "Floating Damage Numbers"
   },
-  "Description": "[h1]Floating Damage Numbers[/h1]\n\nThis mod adds floating damage numbers over vehicles.\n\nDamage received makes numbers appear above the vehicles. Each damage is separated by type and stack on ships.\n\nFeatures a detailed setting to tune to your liking.\n\n[h3] Notes [/h3]\n\nThis mod is multiplayer-compatible; however, proper damage type syncing requires the host to have the mod installed.\n\nAll damage is displayed, either from an enemy or a turret blowing up.\n\nLatest version 1.0.5"
+  "Description": "[h1]Floating Damage Numbers[/h1]\n\nThis mod adds floating damage numbers over vehicles.\n\nDamage received makes numbers appear above the vehicles. Each damage is separated by type and stack on ships.\n\nFeatures a detailed setting to tune to your liking.\n\n[h3] Notes [/h3]\n\nThis mod is multiplayer-compatible; however, proper damage type syncing requires the host to have the mod installed.\n\nAll damage is displayed, either from an enemy or a turret blowing up.\n\nLatest version 1.0.6"
 }
