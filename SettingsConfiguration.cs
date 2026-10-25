@@ -465,19 +465,14 @@ namespace FloatingDamageNumbers
     /// Shared settings remain visible at all times.
     /// Simple and Detailed settings are mutually exclusive based on selected mode.
     /// </summary>
-    public class DamageNumberSettingsTab : SuperScreen<DamageNumberSettingsConfig>
+    public class DamageNumberSettingsTab(ConsoleWindow window, DamageNumberSettingsConfig config) : SuperScreen<DamageNumberSettingsConfig>(window, config)
     {
         private const float Spacing = 20f;
 
-        public override Content Name => new Content(
-            "<color=#4FC3F7>Damage Numbers</color>",
+        public override Content Name => new(
+            "Damage Numbers",
             new ToolTip("Configure floating combat damage numbers, visual appearance, and performance settings.")
         );
-
-        public DamageNumberSettingsTab(ConsoleWindow window, DamageNumberSettingsConfig config)
-            : base(window, config)
-        {
-        }
 
         public override void Build()
         {
@@ -532,7 +527,7 @@ namespace FloatingDamageNumbers
             table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
             table.NameWhereApplicable = "Configuration Mode (Simple vs Detailed)";
 
-            DropDownMenuAlt<SettingsMode> modeDropdown = new DropDownMenuAlt<SettingsMode>();
+            DropDownMenuAlt<SettingsMode> modeDropdown = new();
             modeDropdown.SetItems(
                 new DropDownMenuAltItem<SettingsMode>
                 {
