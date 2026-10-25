@@ -139,10 +139,10 @@ internal static class ModInformation
         string text;
         while ((text = stringReader.ReadLine()) != null)
         {
-            if (text.StartsWith("Mod latest version "))
+            if (text.StartsWith("Latest version "))
             {
                 version = SystemVersion.Parse(
-                    text.Substring("Mod latest version ".Length));
+                    text.Substring("Latest version ".Length));
                 break;
             }
         }
