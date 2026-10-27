@@ -28,15 +28,12 @@ A test of 3v3 with 3 DWG Crossbones v 3 DWG Crossbones results in an average of 
 
 Large explosions, rapid-fire weapons, lasers, and battles involving many damaged blocks still cause the game to process many damage callbacks. Detailed Mode also performs hit-position tracking and construct coordinate conversions. Extremely large battles may produce short frame-time spikes.
 
-If performance or readability is a problem:
+## Compatibility
 
-1. Use Simple Mode.
-2. Increase the minimum damage threshold.
-3. Keep the maximum numbers per ship and world pool size near their defaults.
-4. Disable damage numbers with the toggle during very large battles.
+This mod has not been tested on Linux and Mac builds. I do not know if it works.
 
-This mod has not been tested on Linux and Mac builds.
-This mod does not work in Multiplayer.
+This mod has partial multiplayer support. The HOST must have the mod installed for you to see damage TYPEs. If not, you'll only see total damage from the block destroyed. 
+This mod uses a Host/Client architecture for MP.
 
 ## Personal note
 
