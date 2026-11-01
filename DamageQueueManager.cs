@@ -36,7 +36,21 @@ namespace FloatingDamageNumbers
         private static readonly List<DamageBucket> _drainedBuckets = [];
 
         // Per-ship active damage number lists (Key: MainConstruct UniqueId, or -1 for unanchored)
+        // Per-ship active damage number lists (Key: MainConstruct UniqueId, or -1 for unanchored)
         private static readonly Dictionary<int, List<FloatingElements>> _shipQueues = [];
+
+        // Per-ship active construct health element and cached block health state
+        private static readonly Dictionary<int, FloatingElements> _shipHealthElements = [];
+        private static readonly Dictionary<int, ShipHealthCache> _shipHealthCache = [];
+
+        private class ShipHealthCache
+        {
+            public float CurrentHealth;
+            public float MaxHealth;
+            public float LastFullScanTime = -999f;
+            public float LastUiRefreshTime = -999f;
+            public ConstructHealthMode LastMode;
+        }
 
         // Hard-capped object pool
         private static readonly List<FloatingElements> _pool = [];
@@ -199,6 +213,8 @@ namespace FloatingDamageNumbers
                     _shipQueues.Remove(key);
                 }
             }
+
+            UpdateConstructHealthElements(currentTime, deltaTime, activeCamera);
         }
 
         // Drains all incoming damage events into coalesced buckets for this frame.
@@ -303,6 +319,10 @@ namespace FloatingDamageNumbers
                 {
                     candidate.MarkLargeHit();
                 }
+                if (DamageNumberSettings.ShowConstructHealth && bucket.Construct != null)
+                {
+                    UpdateOrSpawnConstructHealth(bucket.Construct, bucket.TotalDamage, bucket.TotalDamage >= DamageNumberSettings.LargeHitThreshold, currentTime);
+                }
                 return;
             }
 
@@ -319,6 +339,11 @@ namespace FloatingDamageNumbers
                 currentTime);
 
             queue.Add(textInstance);
+
+            if (DamageNumberSettings.ShowConstructHealth && bucket.Construct != null)
+            {
+                UpdateOrSpawnConstructHealth(bucket.Construct, bucket.TotalDamage, isLargeHit, currentTime);
+            }
 
             if (DamageNumberSettings.EnableQueuePerShip && queue.Count > DamageNumberSettings.MaxNumbersPerShip)
             {
@@ -392,7 +417,12 @@ namespace FloatingDamageNumbers
                 q.Remove(oldest);
             }
 
-            return oldest;
+            if (oldest != null && oldest.IsHealthElement)
+            {
+                _shipHealthElements.Remove(oldest.ConstructId);
+            }
+
+            return oldest!;
         }
 
         private static void EnsurePoolRoot()
@@ -419,6 +449,223 @@ namespace FloatingDamageNumbers
                 }
             }
             _shipQueues.Clear();
+
+            foreach (var healthElem in _shipHealthElements.Values)
+            {
+                healthElem?.gameObject.SetActive(false);
+            }
+            _shipHealthElements.Clear();
+            _shipHealthCache.Clear();
+        }
+
+        /// <summary>
+        /// Updates the existing health display for a construct or creates one from the object pool.
+        /// </summary>
+        private static void UpdateOrSpawnConstructHealth(MainConstruct construct, float damageDelta, bool isLargeHit, float currentTime)
+        {
+            int constructId = construct.UniqueId;
+            ResolveConstructHealth(construct, damageDelta, currentTime, out float currentHealth, out float maxHealth);
+
+            if (maxHealth <= 0f)
+            {
+                return;
+            }
+
+            float baseLife = DamageNumberSettings.NumberLifetime;
+            if (isLargeHit && !DamageNumberSettings.UseDPSMode)
+            {
+                baseLife *= DamageNumberSettings.LargeHitLifetimeMultiplier;
+            }
+
+            // checks for existing elements
+            if (_shipHealthElements.TryGetValue(constructId, out FloatingElements? existing) && existing != null && existing.gameObject.activeSelf && existing.IsHealthElement)
+            {
+                existing.UpdateHealth(currentHealth, maxHealth, baseLife, currentTime);
+                return;
+            }
+
+            // Spawn a new health element from the pool
+            FloatingElements healthInstance = GetPooledInstance();
+            healthInstance.InitializeHealth(construct, currentHealth, maxHealth, baseLife, currentTime);
+            _shipHealthElements[constructId] = healthInstance;
+        }
+
+        /// <summary>
+        /// Updates active construct health elements and removes expired or invalid elements.
+        /// </summary>
+        private static void UpdateConstructHealthElements(float currentTime, float deltaTime, Camera? activeCamera)
+        {
+            if (!DamageNumberSettings.ShowConstructHealth)
+            {
+                if (_shipHealthElements.Count > 0)
+                {
+                    foreach (var elem in _shipHealthElements.Values)
+                    {
+                        elem?.gameObject.SetActive(false);
+                    }
+                    _shipHealthElements.Clear();
+                    _shipHealthCache.Clear();
+                }
+                return;
+            }
+
+            if (_shipHealthElements.Count == 0)
+            {
+                return;
+            }
+
+            List<int>? expiredHealthKeys = null;
+
+            foreach (var kvp in _shipHealthElements)
+            {
+                int shipId = kvp.Key;
+                FloatingElements elem = kvp.Value;
+
+                if (elem == null || elem.IsExpired(currentTime) || !elem.gameObject.activeSelf || elem.Construct == null || elem.Construct.Destroyed)
+                {
+                    elem?.gameObject.SetActive(false);
+                    expiredHealthKeys ??= [];
+                    expiredHealthKeys.Add(shipId);
+                    continue;
+                }
+
+                // Periodically resync displayed health (e.g. for block deaths, repairs, or mode changes)
+                if (!_shipHealthCache.TryGetValue(shipId, out ShipHealthCache? cache) ||
+                    (currentTime - cache.LastUiRefreshTime) >= 0.25f ||
+                    cache.LastMode != DamageNumberSettings.HealthCalculationMode)
+                {
+                    ResolveConstructHealth(elem.Construct, 0f, currentTime, out float curHp, out float maxHp);
+                    elem.RefreshDisplayedHealth(curHp, maxHp);
+                }
+
+                elem.ManualUpdate(currentTime, deltaTime, activeCamera);
+                if (!elem.gameObject.activeSelf)
+                {
+                    expiredHealthKeys ??= [];
+                    expiredHealthKeys.Add(shipId);
+                }
+            }
+
+            if (expiredHealthKeys != null)
+            {
+                for (int i = 0; i < expiredHealthKeys.Count; i++)
+                {
+                    int key = expiredHealthKeys[i];
+                    _shipHealthElements.Remove(key);
+                    _shipHealthCache.Remove(key);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolves the current and maximum health values for a construct.
+        /// </summary>
+        private static void ResolveConstructHealth(MainConstruct construct, float damageDelta, float currentTime, out float currentHealth, out float maxHealth)
+        {
+            int constructId = construct.UniqueId;
+            if (!_shipHealthCache.TryGetValue(constructId, out ShipHealthCache? cache))
+            {
+                cache = new ShipHealthCache();
+                _shipHealthCache[constructId] = cache;
+            }
+
+            ConstructHealthMode mode = DamageNumberSettings.HealthCalculationMode;
+            bool modeChanged = cache.LastMode != mode;
+            cache.LastMode = mode;
+            cache.LastUiRefreshTime = currentTime;
+
+            // If any but TotalBlockHealth mode, use the block count method
+            if (mode == ConstructHealthMode.BlockCount || mode == ConstructHealthMode.Percentage)
+            {
+                try
+                {
+                    var basics = construct.AllBasicsRestricted;
+                    if (basics != null)
+                    {
+                        currentHealth = basics.GetNumberAliveBlocksIncludingSubConstructables();
+                        maxHealth = basics.GetNumberBlocksIncludingSubConstructables();
+                        cache.CurrentHealth = currentHealth;
+                        cache.MaxHealth = maxHealth;
+                        return;
+                    }
+                }
+                catch
+                {
+                }
+
+                currentHealth = cache.CurrentHealth;
+                maxHealth = cache.MaxHealth;
+                return;
+            }
+
+            // TotalBlockHealth mode: full block scan throttled to once every 0.5s per ship, with instant delta subtraction between scans
+            if (modeChanged || cache.MaxHealth <= 0f || (currentTime - cache.LastFullScanTime) >= 0.5f)
+            {
+                SumConstructBlockHealth(construct, out float scannedCur, out float scannedMax);
+                cache.CurrentHealth = scannedCur;
+                cache.MaxHealth = scannedMax;
+                cache.LastFullScanTime = currentTime;
+            }
+            else if (damageDelta > 0f)
+            {
+                cache.CurrentHealth = Mathf.Max(0f, cache.CurrentHealth - damageDelta);
+            }
+
+            currentHealth = cache.CurrentHealth;
+            maxHealth = cache.MaxHealth;
+        }
+
+        /// <summary>
+        /// Calculates the total current and maximum health of a construct and its active subconstructs.
+        /// </summary>
+        private static void SumConstructBlockHealth(MainConstruct construct, out float currentHealth, out float maxHealth)
+        {
+            currentHealth = 0f;
+            maxHealth = 0f;
+
+            try
+            {
+                var basics = construct.AllBasicsRestricted;
+                if (basics == null) return;
+
+                AccumulateBlocksHealth(basics.AliveAndDead?.Blocks, ref currentHealth, ref maxHealth);
+
+                var subs = basics.AllSubconstructsBelowUs;
+                if (subs != null)
+                {
+                    int subCount = subs.Count;
+                    for (int i = 0; i < subCount; i++)
+                    {
+                        var sub = subs[i];
+                        if (sub != null && !sub.Destroyed && sub.AllBasicsRestricted != null)
+                        {
+                            AccumulateBlocksHealth(sub.AllBasicsRestricted.AliveAndDead?.Blocks, ref currentHealth, ref maxHealth);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        /// <summary>
+        ///Accumulates the current and maximum health of the specified blocks.
+        /// </summary>
+        private static void AccumulateBlocksHealth(List<Block>? blocks, ref float currentHealth, ref float maxHealth)
+        {
+            if (blocks == null) return;
+            int count = blocks.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Block b = blocks[i];
+                if (b == null) continue;
+                maxHealth += b.MaximumHealth;
+                if (b.IsAlive)
+                {
+                    currentHealth += b.CurrentHealth;
+                }
+            }
         }
     }
 }

@@ -7,6 +7,13 @@ namespace FloatingDamageNumbers
     /// <summary>
     /// Configuration settings for the Floating Damage Numbers mod.
     /// </summary>
+    public enum ConstructHealthMode
+    {
+        BlockCount = 0,
+        TotalBlockHealth = 1,
+        Percentage = 2
+    }
+
     public static class DamageNumberSettings
     {
         public static bool EnableDamageNumbers = true; // master toggle for the mod
@@ -14,6 +21,9 @@ namespace FloatingDamageNumbers
         // either health per block, construct effective health, or blocks alive.
 
         public static bool UseDPSMode = false; // if true, numbers will show damage per second instead of total damage.
+        public static bool ShowConstructHealth = false; // if true, displays construct health and total health underneath the stack.
+        public static ConstructHealthMode HealthCalculationMode = ConstructHealthMode.BlockCount;
+        public static bool ShowConstructHealthPercentage = true; // if true, adds a percentage to the end of the display
 
         #region Shared Settings
 

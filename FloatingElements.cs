@@ -20,6 +20,11 @@ namespace FloatingDamageNumbers
         private TextMeshProUGUI? _mainText;
         private RectTransform? _rectTransform;
         private Image? _damageIconImage;
+        private Image? _dividerLineImage;
+
+        public bool IsHealthElement { get; private set; }
+        public float CurrentHealth { get; private set; }
+        public float MaxHealth { get; private set; }
 
         public DamageType Type { get; private set; }
         public float PreviousDamage { get; private set; }
@@ -62,6 +67,9 @@ namespace FloatingDamageNumbers
         private void Awake()
         {
             EnsureComponents();
+
+            IsHealthElement = false;
+            _dividerLineImage?.enabled = false;
         }
 
 
@@ -104,6 +112,7 @@ namespace FloatingDamageNumbers
             _rectTransform.anchorMax = Vector2.zero;
 
             EnsureSpriteRenderer();
+            EnsureDividerLine();
         }
 
         /// <summary>
@@ -125,6 +134,31 @@ namespace FloatingDamageNumbers
         }
 
         /// <summary>
+        /// Initializes the horizontal divider line rendered above construct health elements.
+        /// </summary>
+        private void EnsureDividerLine()
+        {
+            if (_dividerLineImage != null) return;
+
+            GameObject lineObj = new("HealthDividerLine");
+            lineObj.transform.SetParent(transform, false);
+            _dividerLineImage = lineObj.AddComponent<Image>();
+            _dividerLineImage.raycastTarget = false;
+            _dividerLineImage.color = Color.white;
+            _dividerLineImage.enabled = false;
+
+            Outline outline = lineObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            RectTransform lineRt = _dividerLineImage.rectTransform;
+            lineRt.pivot = new Vector2(0.5f, 0.5f);
+            lineRt.anchorMin = new Vector2(0.5f, 0.5f);
+            lineRt.anchorMax = new Vector2(0.5f, 0.5f);
+            lineRt.sizeDelta = new Vector2(260f, 4f);
+        }
+
+        /// <summary>
         /// Initializes the damage number display with the specified parameters.
         /// </summary>
         public void Initialize(
@@ -136,6 +170,9 @@ namespace FloatingDamageNumbers
             float currentTime)
         {
             EnsureComponents();
+
+            IsHealthElement = false;
+            _dividerLineImage?.enabled = false;
 
             Construct = construct;
             ConstructId = construct != null ? construct.UniqueId : -1;
@@ -202,6 +239,88 @@ namespace FloatingDamageNumbers
                 _mainText.fontSharedMaterial = _cachedFontAsset.material;
                 _mainText.UpdateMeshPadding();
                 _mainText.ForceMeshUpdate();
+            }
+        }
+
+        /// <summary>
+        /// Initializes this instance as a construct health display element positioned underneath the stack.
+        /// </summary>
+        public void InitializeHealth(
+            MainConstruct construct,
+            float currentHealth,
+            float maxHealth,
+            float lifetime,
+            float currentTime)
+        {
+            EnsureComponents();
+
+            IsHealthElement = true;
+            Construct = construct;
+            ConstructId = construct != null ? construct.UniqueId : -1;
+            Type = DamageType.None;
+            CurrentHealth = Mathf.Max(0f, currentHealth);
+            MaxHealth = Mathf.Max(0f, maxHealth);
+            TotalDamage = 0f;
+            PreviousDamage = 0f;
+            HitCount = 1;
+            IsLargeHit = false;
+            CreationTime = currentTime;
+            LastHitTime = currentTime;
+            Lifetime = lifetime;
+            StackIndex = -1;
+
+            Vector3 com = construct != null ? construct.CentreOfMass : Vector3.zero;
+            LastWorldHitPosition = com;
+            LocalHitPosition = Vector3.zero;
+
+            _baseColor = DamageNumberSettings.DefaultColor;
+            _lastAlpha = 1.0f;
+            _mainText?.color = _baseColor;
+            _damageIconImage?.enabled = false;
+            if (_dividerLineImage != null)
+            {
+                _dividerLineImage.color = Color.white;
+                _dividerLineImage.enabled = true;
+            }
+
+            _popTimer = 0f;
+
+            transform.position = com + DamageNumberSettings.BaseSpawnOffset;
+            gameObject.SetActive(true);
+
+            UpdateHealthTextDisplay(true);
+
+            if (_mainText != null && _cachedFontAsset != null && _cachedFontAsset.material != null)
+            {
+                _mainText.fontSharedMaterial = _cachedFontAsset.material;
+                _mainText.UpdateMeshPadding();
+                _mainText.ForceMeshUpdate();
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the construct health values and extends lifetime while the construct continues taking damage.
+        /// </summary>
+        public void UpdateHealth(float currentHealth, float maxHealth, float baseLife, float currentTime)
+        {
+            LastHitTime = currentTime;
+            Lifetime = (currentTime - CreationTime) + baseLife;
+            RefreshDisplayedHealth(currentHealth, maxHealth);
+        }
+
+        /// <summary>
+        /// Updates the displayed construct health values without extending the element's lifetime.
+        /// </summary>
+        public void RefreshDisplayedHealth(float currentHealth, float maxHealth)
+        {
+            float clampedCur = Mathf.Max(0f, currentHealth);
+            float clampedMax = Mathf.Max(0f, maxHealth);
+
+            if (Mathf.Abs(CurrentHealth - clampedCur) >= 0.5f || Mathf.Abs(MaxHealth - clampedMax) >= 0.5f)
+            {
+                CurrentHealth = clampedCur;
+                MaxHealth = clampedMax;
+                UpdateHealthTextDisplay(false);
             }
         }
 
@@ -287,7 +406,7 @@ namespace FloatingDamageNumbers
         /// </summary>
         private string LargeNumberAbbrevation(float _value)
         {
-            if (DamageNumberSettings.FormatLargeNumbers)
+            if (DamageNumberSettings.FormatLargeNumbers && _value >= 1000f)
             {
                 int mag = (int)(Math.Floor(Math.Log10(_value)) / 3); 
                 double divisor = Math.Pow(10, mag*3);
@@ -385,11 +504,82 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// reupdate renderer and positionings
         /// </summary>
+        /// <summary>
+        /// Updates the construct health text display ("current / total (pct%)") and optionally rebuilds the mesh and divider line.
+        /// </summary>
+        private void UpdateHealthTextDisplay(bool rebuildMesh)
+        {
+            float cur = Mathf.Max(0f, CurrentHealth);
+            float max = Mathf.Max(0f, MaxHealth);
+
+            string curText = LargeNumberAbbrevation(cur);
+            string maxText = LargeNumberAbbrevation(max);
+
+            int pct = max > 0f ? Mathf.Clamp(Mathf.RoundToInt((cur / max) * 100f), 0, 100) : 0;
+            if (cur > 0f && pct == 0)
+            {
+                pct = 1;
+            }
+
+            // display health as either percentage or "current / max" based on user settings
+            string healthText;
+            if (DamageNumberSettings.HealthCalculationMode == ConstructHealthMode.Percentage )
+            {
+                healthText = $"{pct}%";
+            }
+            else
+            {
+                healthText = $"{curText} / {maxText}";
+                if (DamageNumberSettings.ShowConstructHealthPercentage)
+                {
+                    healthText += $" ({pct}%)";
+                }
+            }
+
+            if (_mainText != null)
+            {
+                _mainText.text = healthText;
+                _textMeshDirty = true;
+            }
+
+            if (rebuildMesh)
+            {
+                RefreshTextMeshAndIcon();
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the associated icon and divider line, and updates their layout based on the element type and display settings
+        /// </summary>
         private void RefreshTextMeshAndIcon()
         {
+            if (IsHealthElement)
+            {
+                _damageIconImage?.enabled = false;
+
+                EnsureDividerLine();
+                if (_dividerLineImage != null)
+                {
+                    float baseFontSize = _mainText != null ? _mainText.fontSize : 80f;
+                    float preferredWidth = _mainText != null ? _mainText.GetPreferredValues().x : 240f;
+                    float lineWidth = Mathf.Max(preferredWidth * 1.05f, 260f);
+                    float lineY = 0.5f * baseFontSize * DamageNumberSettings.StackSpacingMultiplier;
+
+                    _dividerLineImage.rectTransform.sizeDelta = new Vector2(lineWidth, 4f);
+                    _dividerLineImage.rectTransform.anchoredPosition = new Vector2(0f, lineY);
+                    _dividerLineImage.enabled = true;
+                }
+
+                _textMeshDirty = false;
+                return;
+            }
+
+            _dividerLineImage?.enabled = false;
+
             if (DamageNumberSettings.ShowAssociatedIcon)
             {
                 EnsureSpriteRenderer();
+            EnsureDividerLine();
                 if (_damageIconImage != null)
                 {
                     Sprite? icon = DamageIconCache.GetIcon(Type);
@@ -407,9 +597,9 @@ namespace FloatingDamageNumbers
                     }
                 }
             }
-            else if (_damageIconImage != null)
+            else
             {
-                _damageIconImage.enabled = false;
+                _damageIconImage?.enabled = false;
             }
 
             _textMeshDirty = false;
@@ -429,7 +619,7 @@ namespace FloatingDamageNumbers
             }
 
             //// In DPS mode, update display strictly once per second so sustained combat is readable
-            if (DamageNumberSettings.UseDPSMode && currentTime >= _nextDpsUpdateTime)
+            if (!IsHealthElement && DamageNumberSettings.UseDPSMode && currentTime >= _nextDpsUpdateTime)
             {
                 int windowSize = Mathf.Clamp(Mathf.RoundToInt(DamageNumberSettings.NumberLifetime), 1, MaxDpsBuckets);
 
@@ -465,7 +655,7 @@ namespace FloatingDamageNumbers
             {
                 try
                 {
-                    if (!DamageNumberSettings.EnableDetailedSettings)
+                    if (IsHealthElement || !DamageNumberSettings.EnableDetailedSettings)
                     {
                         basePos = Construct.CentreOfMass;
                         LastWorldHitPosition = basePos;
@@ -508,12 +698,23 @@ namespace FloatingDamageNumbers
                 {
                     _mainText?.enabled = false;
                     _damageIconImage?.enabled = false;
+                    _dividerLineImage?.enabled = false;
                     return;
                 }
 
                 if (_mainText != null && !_mainText.enabled) _mainText.enabled = true;
-                if (_damageIconImage != null && DamageNumberSettings.ShowAssociatedIcon && _damageIconImage.sprite != null)
-                    _damageIconImage.enabled = true;
+                if (IsHealthElement)
+                {
+                    _damageIconImage?.enabled = false;
+                    if (_dividerLineImage != null && !_dividerLineImage.enabled)
+                        _dividerLineImage.enabled = true;
+                }
+                else
+                {
+                    _dividerLineImage?.enabled = false;
+                    if (_damageIconImage != null && DamageNumberSettings.ShowAssociatedIcon && _damageIconImage.sprite != null)
+                        _damageIconImage.enabled = true;
+                }
 
                 // Screen-space scale
                 // In 3D, angular size is proportional to (worldScale / dist).
@@ -562,6 +763,7 @@ namespace FloatingDamageNumbers
                     _mainText.color = c;
                 }
                 _damageIconImage?.color = new Color(1f, 1f, 1f, alpha);
+                _dividerLineImage?.color = new Color(1f, 1f, 1f, alpha);
             }
         }
 

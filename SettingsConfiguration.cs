@@ -1,6 +1,4 @@
-using System;
-using System.Linq.Expressions;
-using System.Reflection;
+using BrilliantSkies.Core.Collections;
 using BrilliantSkies.PlayerProfiles;
 using BrilliantSkies.Ui.Consoles;
 using BrilliantSkies.Ui.Consoles.Examples;
@@ -14,6 +12,9 @@ using BrilliantSkies.Ui.Consoles.Styles;
 using BrilliantSkies.Ui.Layouts.DropDowns;
 using BrilliantSkies.Ui.Tips;
 using HarmonyLib;
+using System;
+using System.Linq.Expressions;
+using System.Reflection;
 using UnityEngine;
 
 namespace FloatingDamageNumbers
@@ -80,6 +81,11 @@ namespace FloatingDamageNumbers
             public float MaxAccumulationDistance { get; set; } = 25.0f;
             public bool HoverOverLastPositionHit { get; set; } = true;
             public float NetworkTickrate { get; set; } = 20f;
+
+            // Health controls
+            public bool ShowConstructHealth { get; set; } = false;
+            public ConstructHealthMode HealthCalculationMode { get; set; } = ConstructHealthMode.BlockCount;
+            public bool ShowConstructHealthPercentage { get; set; } = false;
         }
 
         public override ModuleType ModuleType => ModuleType.Options;
@@ -146,6 +152,10 @@ namespace FloatingDamageNumbers
             DamageNumberSettings.MaxAccumulationDistance = MaxAccumulationDistance;
             DamageNumberSettings.HoverOverLastPositionHit = HoverOverLastPositionHit;
             DamageNumberSettings.NetworkTickrate = NetworkTickrate;
+
+            DamageNumberSettings.ShowConstructHealth = ShowConstructHealth;
+            DamageNumberSettings.HealthCalculationMode = HealthCalculationMode;
+            DamageNumberSettings.ShowConstructHealthPercentage = ShowConstructHealthPercentage;
         }
 
         #region Properties
@@ -363,6 +373,24 @@ namespace FloatingDamageNumbers
             set { Internal.NetworkTickrate = value; DamageNumberSettings.NetworkTickrate = value; }
         }
 
+        // health
+        public bool ShowConstructHealth
+        {
+            get => Internal.ShowConstructHealth;
+            set { Internal.ShowConstructHealth = value; DamageNumberSettings.ShowConstructHealth = value; }
+        }
+
+        public ConstructHealthMode HealthCalculationMode
+        {
+            get => Internal.HealthCalculationMode;
+            set { Internal.HealthCalculationMode = value; DamageNumberSettings.HealthCalculationMode = value; }
+        }
+        public bool ShowConstructHealthPercentage
+        {
+            get => Internal.ShowConstructHealthPercentage;
+            set { Internal.ShowConstructHealthPercentage = value; DamageNumberSettings.ShowConstructHealthPercentage = value; }
+        }
+
         #endregion
     }
 
@@ -486,6 +514,7 @@ namespace FloatingDamageNumbers
             {
                 DetailedSettingsSection();
             }
+            HealthSection();
             SharedSettingsSection();
             PerformanceSection();
         }
@@ -540,7 +569,7 @@ namespace FloatingDamageNumbers
                 {
                     Name = "<b>Detailed Mode</b>",
                     ObjectForAction = SettingsMode.Detailed,
-                    ToolTip = "Shows damage at exact hit positions with full aggregation and pooling controls."
+                    ToolTip = "Shows damage at exact hit positions with full aggregation and pooling controls. (not recommended)"
                 }
             );
 
@@ -812,7 +841,7 @@ namespace FloatingDamageNumbers
 
             table.AddInterpretter(UIHelper.FloatSlider(
                 _focus,
-                0f, 60f, 1f, 10f,
+                -100f, 100f, 1f, 10f,
                 "COM Height Offset (m)",
                 I => I.BaseSpawnOffsetY,
                 "Height above the ship Center-of-Mass where floating damage numbers are anchored (default 10m)."
@@ -885,6 +914,70 @@ namespace FloatingDamageNumbers
                 I => I.MaxWorldPoolSize,
                 "Hard cap on total 3D text objects rendered across the battlefield (default 64)."
             ), 0, 1);
+        }
+
+        private void HealthSection()
+        {
+            ScreenSegmentTable table = CreateTableSegment(2, 2);
+            table.SqueezeTable = false;
+            table.SpaceBelow = Spacing;
+            table.BackgroundStyleWhereApplicable = ConsoleStyles.Instance.Styles.Segments.OptionalSegmentDarkBackgroundWithHeader.Style;
+            table.NameWhereApplicable = "Construct Health Display";
+
+            table.AddInterpretter(UIHelper.Bool(
+                _focus,
+                "Show Construct Health",
+                "Display construct health and total health underneath the damage stack above Center of Mass (default: false).",
+                I => I.ShowConstructHealth
+            ));
+            table.AddInterpretter(UIHelper.Bool(
+                _focus,
+                "Show Health Percentage",
+                "Adds a percentage to the end of the construct health display.",
+                I => I.ShowConstructHealthPercentage
+            ));
+            //table.AddInterpretter(UIHelper.Bool(
+            //    _focus,
+            //    "Show healing done",
+            //    "Adds a type to display healing done.",
+            //    I => I.TO DO, ADD HEALING DONE SETTING
+            //));
+
+            DropDownMenuAlt<ConstructHealthMode> healthModeDropdown = new();
+            healthModeDropdown.SetItems(
+                new DropDownMenuAltItem<ConstructHealthMode>
+                {
+                    Name = "<b>Block Count</b>",
+                    ObjectForAction = ConstructHealthMode.BlockCount,
+                    ToolTip = "Uses built-in construct health based on alive blocks vs. total blocks. eg 1,000/1,000 (100%)"
+                },
+                new DropDownMenuAltItem<ConstructHealthMode>
+                {
+                    Name = "<b>Total Block Health (HP)</b>",
+                    ObjectForAction = ConstructHealthMode.TotalBlockHealth,
+                    ToolTip = "Calculates total effective health by summing health across all blocks, for example 1 (4m Heavy Armor) is 6000/6000 HP, we add the health of each block."
+                },
+                new DropDownMenuAltItem<ConstructHealthMode>
+                {
+                    Name = "<b>Percentage</b>",
+                    ObjectForAction = ConstructHealthMode.Percentage,
+                    ToolTip = "Only displays percentage. eg 100%"
+                }
+
+            );
+
+            table.AddInterpretter(
+                new DropDown<DamageNumberSettingsConfig, ConstructHealthMode>(
+                    _focus,
+                    healthModeDropdown,
+                    (I, m) => I.HealthCalculationMode == m,
+                    (I, m) =>
+                    {
+                        I.HealthCalculationMode = m;
+                        TriggerScreenRebuild();
+                    }
+                )
+            );
         }
     }
 
