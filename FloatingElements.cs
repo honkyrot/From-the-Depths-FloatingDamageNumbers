@@ -442,22 +442,26 @@ namespace FloatingDamageNumbers
         private void UpdateTextDisplay(bool rebuildMesh)
         {
             // standard mode
-            string damageText;
-            damageText = LargeNumberAbbrevation(TotalDamage);
-
+            string damageText = LargeNumberAbbrevation(TotalDamage);
+            if (Type == DamageNumberSettings.HealingDamageType)
+            {
+                damageText = $"+{damageText}";
+            }
             if (DamageNumberSettings.ShowDamageTypeTag)
             {
-                if (Type == DamageType.None)
+                if (Type == DamageNumberSettings.HealingDamageType)
+                {
+                    damageText = $"[HEAL] {damageText}";
+                }
+                else if (Type == DamageType.None)
                 {
                     damageText = $"[OTHER] {damageText}";
                 }
                 else
                 {
-                    string str_type = Type.ToString().ToUpper();
-                    damageText = $"[{str_type}] {damageText}";
+                    damageText = $"[{Type.ToString().ToUpper()}] {damageText}";
                 }
             }
-
             if (_mainText != null)
             {
                 _mainText.text = damageText;
@@ -475,8 +479,9 @@ namespace FloatingDamageNumbers
         /// </summary>
         private void UpdateTextDisplayasDPS(bool rebuildMesh)
         {
-            string damageText;
-            damageText = LargeNumberAbbrevation(CurrentDPS) + " DPS";
+            string suffix = Type == DamageNumberSettings.HealingDamageType ? " HPS" : " DPS";
+            string prefix = Type == DamageNumberSettings.HealingDamageType ? "+" : "";
+            string damageText = prefix + LargeNumberAbbrevation(CurrentDPS) + suffix;
 
             if (DamageNumberSettings.ShowDamageTypeTag)
             {

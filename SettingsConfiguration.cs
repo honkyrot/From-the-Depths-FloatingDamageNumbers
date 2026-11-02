@@ -86,6 +86,7 @@ namespace FloatingDamageNumbers
             public bool ShowConstructHealth { get; set; } = false;
             public ConstructHealthMode HealthCalculationMode { get; set; } = ConstructHealthMode.BlockCount;
             public bool ShowConstructHealthPercentage { get; set; } = false;
+            public bool ShowHealingNumbers { get; set; } = false;
         }
 
         public override ModuleType ModuleType => ModuleType.Options;
@@ -156,6 +157,7 @@ namespace FloatingDamageNumbers
             DamageNumberSettings.ShowConstructHealth = ShowConstructHealth;
             DamageNumberSettings.HealthCalculationMode = HealthCalculationMode;
             DamageNumberSettings.ShowConstructHealthPercentage = ShowConstructHealthPercentage;
+            DamageNumberSettings.ShowHealingNumbers = ShowHealingNumbers;
         }
 
         #region Properties
@@ -389,6 +391,11 @@ namespace FloatingDamageNumbers
         {
             get => Internal.ShowConstructHealthPercentage;
             set { Internal.ShowConstructHealthPercentage = value; DamageNumberSettings.ShowConstructHealthPercentage = value; }
+        }
+        public bool ShowHealingNumbers
+        {
+            get => Internal.ShowHealingNumbers;
+            set { Internal.ShowHealingNumbers = value; DamageNumberSettings.ShowHealingNumbers = value; }
         }
 
         #endregion
@@ -936,12 +943,12 @@ namespace FloatingDamageNumbers
                 "Adds a percentage to the end of the construct health display.",
                 I => I.ShowConstructHealthPercentage
             ));
-            //table.AddInterpretter(UIHelper.Bool(
-            //    _focus,
-            //    "Show healing done",
-            //    "Adds a type to display healing done.",
-            //    I => I.TO DO, ADD HEALING DONE SETTING
-            //));
+            table.AddInterpretter(UIHelper.Bool(
+                _focus,
+                "Show healing done",
+                "Adds a type to display healing done.",
+                I => I.ShowHealingNumbers
+            ));
 
             DropDownMenuAlt<ConstructHealthMode> healthModeDropdown = new();
             healthModeDropdown.SetItems(

@@ -17,11 +17,11 @@ namespace FloatingDamageNumbers
     public static class DamageNumberSettings
     {
         public static bool EnableDamageNumbers = true; // master toggle for the mod
-        //public static bool ShowHealingNumbers = false; // show green healing numbers when a block is repaired or healed, maybe later 
-        // either health per block, construct effective health, or blocks alive.
+        public static bool ShowHealingNumbers = false; // show green healing numbers when a block is repaired or healed, maybe later 
 
         public static bool UseDPSMode = false; // if true, numbers will show damage per second instead of total damage.
         public static bool ShowConstructHealth = false; // if true, displays construct health and total health underneath the stack.
+        public const DamageType HealingDamageType = (DamageType)16;
         public static ConstructHealthMode HealthCalculationMode = ConstructHealthMode.BlockCount;
         public static bool ShowConstructHealthPercentage = true; // if true, adds a percentage to the end of the display
 
@@ -29,6 +29,7 @@ namespace FloatingDamageNumbers
 
         #region Damage Type Colors
 
+        public static Color HealingColor = new(0.50f, 1.00f, 0.50f, 1f); // light green
         public static Color KineticColor = new(1.00f, 0.95f, 0.75f, 1f); // white (nearly)
         public static Color ExplosiveColor = new(1.00f, 0.50f, 0.05f, 1f); // orange
         public static Color EmpColor = new(0.00f, 0.85f, 1.00f, 1f); // blue (different)
@@ -41,6 +42,11 @@ namespace FloatingDamageNumbers
 
         public static Color GetColor(DamageType damageType)
         {
+            if (damageType == HealingDamageType)
+            {
+                return HealingColor;
+            }
+
             return damageType switch
             {
                 DamageType.Kinetic => KineticColor,

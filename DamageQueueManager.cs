@@ -78,11 +78,11 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// If a construct is being actively repaired, this uses a custom "healing" damage type to display the amount of health restored.
         /// </summary>
-        //public static void RecordHealing(MainConstruct? construct, float healingAmount)
-        //{
-        //    Vector3 worldPosition = construct != null ? construct.CentreOfMass : Vector3.zero;
-
-        //}
+        public static void RecordHealing(MainConstruct? construct, float healingAmount, Vector3 hitPosition)
+        {
+            if (!DamageNumberSettings.ShowHealingNumbers) return;
+            RecordDamage(construct, DamageNumberSettings.HealingDamageType, healingAmount, hitPosition);
+        }
 
         /// <summary>
         /// Processes coalesced buckets, updates lifetimes, and assigns vertical stack indices.
@@ -263,13 +263,13 @@ namespace FloatingDamageNumbers
                 _shipQueues[constructId] = queue;
             }
 
-            // if false, all damage types will merge into a single number per ship
-            if (!DamageNumberSettings.AggregateOnlySameDamageType)
+            // if false, all damage types will merge into a single number per ship, excludes healing
+            if (!DamageNumberSettings.AggregateOnlySameDamageType && bucket.Type != DamageNumberSettings.HealingDamageType)
             {
                 bucket.Type = DamageType.None;
             }
 
-                bool isExplosive = bucket.Type == DamageType.Explosive;
+            bool isExplosive = bucket.Type == DamageType.Explosive;
             bool isFire = bucket.Type == DamageType.Fire;
             bool isLaser = bucket.Type == DamageType.Laser;
             bool isRapid = isExplosive || isFire || isLaser;
