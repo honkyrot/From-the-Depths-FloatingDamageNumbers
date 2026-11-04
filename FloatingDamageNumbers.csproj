@@ -31,6 +31,7 @@
     </Reference>
     <Reference Include="Ai">
       <HintPath>$(GameManagedPath)\Ai.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(GameManagedPath)\Assembly-CSharp.dll</HintPath>
@@ -42,15 +43,19 @@
     </Reference>
     <Reference Include="Effects">
       <HintPath>$(GameManagedPath)\Effects.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="GridCasts">
       <HintPath>$(GameManagedPath)\GridCasts.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Ftd">
       <HintPath>$(GameManagedPath)\Ftd.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Modding">
       <HintPath>$(GameManagedPath)\Modding.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="NetInfrastructure">
       <HintPath>$(GameManagedPath)\NetInfrastructure.dll</HintPath>
@@ -58,6 +63,7 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>$(GameManagedPath)\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="PlayerProfiles">
       <HintPath>$(GameManagedPath)\PlayerProfiles.dll</HintPath>
@@ -65,9 +71,11 @@
     </Reference>
     <Reference Include="Steamworks">
       <HintPath>$(GameManagedPath)\Steamworks.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Ui">
       <HintPath>$(GameManagedPath)\Ui.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(GameManagedPath)\UnityEngine.dll</HintPath>
