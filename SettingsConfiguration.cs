@@ -74,7 +74,7 @@ namespace FloatingDamageNumbers
 
             // Detailed Mode
             public float MinDamageToDisplay { get; set; } = 5f;
-            public int MaxNumbersPerShip { get; set; } = 8;
+            public int MaxNumbersPerShip { get; set; } = 10;
             public int MaxWorldPoolSize { get; set; } = 36;
             public bool AccumulateSustainedFire { get; set; } = true;
             public float AccumulationWindowSeconds { get; set; } = 1.0f;
@@ -909,10 +909,10 @@ namespace FloatingDamageNumbers
             table.NameWhereApplicable = "Performance";
 
             table.AddInterpretter(UIHelper.IntSlider(
-               _focus, 8, 256, 1, 8,
+               _focus, 10, 256, 1, 10,
                "Max Numbers Per Ship",
                I => I.MaxNumbersPerShip,
-               "Maximum simultaneous damage numbers allowed per individual ship (default 8)."
+               "Maximum simultaneous damage numbers allowed per individual ship (default 10)."
            ), 0, 0);
 
             table.AddInterpretter(UIHelper.IntSlider(

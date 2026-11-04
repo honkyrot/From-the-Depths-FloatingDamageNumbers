@@ -198,7 +198,7 @@ namespace FloatingDamageNumbers
         /// <summary>
         /// Maximum simultaneous numbers allowed per ship.
         /// </summary>
-        public static int MaxNumbersPerShip = 8; // i do not recommend increasing this.
+        public static int MaxNumbersPerShip = 10; // i do not recommend increasing this.
 
         /// <summary>
         /// Hard cap on total 3D TextMesh objects in the world pool.
